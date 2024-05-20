@@ -38,6 +38,20 @@
             transition: transform 0.3s, box-shadow 0.3s;
             position: relative;
         }
+        .tile::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            border: 4px solid transparent;
+            transition: border-color 0.3s;
+            z-index: 5;
+        }
+        .tile:hover::before {
+            border-color: #FFFFFF;
+        }
         .tile:hover {
             transform: translateY(-5px);
             box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
@@ -62,7 +76,7 @@
             width: 100%;
             text-align: left;
             transition: background-color 0.3s, color 0.3s;
-            z-index: 5;
+            z-index: 6;
         }
         .tile:hover .content {
             background-color: #FFFFFF;
@@ -77,16 +91,10 @@
     </style>
 </head>
 <body>
-
+	
     <h1>I Helped Build...</h1>
-    <div class="container">
-        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/d01235e7-6b5b-45f7-b63d-a5938dade207/2ca613d4-7c78-47f5-bdad-3c972adfb44a/images/hero.jpg" alt="Edge">
-            <div class="content">Edge</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/d01235e7-6b5b-45f7-b63d-a5938dade207"></a>
-        </div>
-		
-        <div class="tile">
+    <div class="container">		
+        	<div class="tile">
 			<img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/75fa80d8-cba9-4c4e-86dd-18e2b9ec12e3/9b0c4221-5069-445b-9346-f206396ebb69/images/hero.jpg" alt="Snowbound">
 			<div class="content">Snowbound</div>
 			<a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/75fa80d8-cba9-4c4e-86dd-18e2b9ec12e3"></a>
@@ -128,7 +136,7 @@
 			<a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/226c4540-38ee-4866-97a2-42799ca419c7"></a>
 		</div>
 		
-        <div class="tile">
+        	<div class="tile">
 			<img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/ac771b36-b6ba-4d0f-ad2e-3200a6597db2/229172e6-4e75-4177-b122-d4826a8393f1/images/hero.jpg" alt="The Pit">
 			<div class="content">The Pit</div>
 			<a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/ec1d4f25-8e4a-4cf7-ae48-43fa9e1a3808"></a>
@@ -164,7 +172,7 @@
 			<a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/93e40961-62f2-41f9-87e7-3024536a07db"></a>
 		</div>
 		
-        <div class="tile">
+        	<div class="tile">
 			<img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/97b06ce0-d5ed-49f4-bf52-a01d6b7736f0/8ca9442b-3186-4890-a355-6c03b3ee5e8a/images/hero.jpg" alt="Guardian">
 			<div class="content">Guardian</div>
 			<a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/97b06ce0-d5ed-49f4-bf52-a01d6b7736f0"></a>
@@ -212,7 +220,7 @@
 			<a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/ed6b7ad5-bed8-4526-ab5f-056646937b2e"></a>
 		</div>
 		
-        <div class="tile">
+        	<div class="tile">
 			<img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/a12d6d0f-2ff1-4927-b85c-b37b43dbdd07/390d5d14-a78c-40b9-a3fa-760ced93f393/images/hero.jpg" alt="Arctic Point">
 			<div class="content">Arctic Point</div>
 			<a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/a12d6d0f-2ff1-4927-b85c-b37b43dbdd07"></a>
@@ -267,7 +275,7 @@
 		</div>
     </div>
 <footer>
-    <p>&copy; 2024 Mr Green. All rights reserved.</p>
+    <p>&copy; 2024 Mr Green</p>
 </footer>
 </body>
 </html>
