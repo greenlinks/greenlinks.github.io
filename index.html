@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang='en'>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css?family=Rajdhani" rel="stylesheet">
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <link href='https://fonts.googleapis.com/css?family=Rajdhani' rel='stylesheet'>
     <title>Green's Forge Maps</title>
     <style>
         body {
@@ -37,6 +37,7 @@
             overflow: hidden;
             transition: transform 0.3s, box-shadow 0.3s;
             position: relative;
+            cursor: pointer;
         }
         .tile::before {
             content: '';
@@ -55,17 +56,6 @@
         .tile:hover {
             transform: translateY(-5px);
             box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
-        }
-        .tile a {
-            text-decoration: none;
-            color: #FFFFFF;
-            display: block;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
         }
         .tile .content {
             padding: 10px;
@@ -88,143 +78,298 @@
             object-fit: cover;
             display: block;
         }
+        .tile .hover-text {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-size: 14px;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 7;
+        }
+        .tile:hover .hover-text {
+            opacity: 1;
+        }
+        .hover-text ul {
+            list-style-type: disc;
+            padding-left: 15px;
+            margin: 0;
+        }
     </style>
+    <script>
+        function isTouchDevice() {
+            return 'ontouchstart' in window || navigator.maxTouchPoints;
+        }
+
+        function toggleOverlay(event) {
+            var tile = event.currentTarget;
+            var link = tile.querySelector('a');
+            if (isTouchDevice()) {
+                var isActive = tile.classList.contains('active');
+                var tiles = document.querySelectorAll('.tile');
+                tiles.forEach(function(t) {
+                    t.classList.remove('active');
+                });
+                if (!isActive) {
+                    tile.classList.add('active');
+                    event.preventDefault();
+                } else {
+                    window.location = link.href;
+                }
+            } else {
+                window.location = link.href;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var tiles = document.querySelectorAll('.tile');
+            tiles.forEach(function(tile) {
+                tile.addEventListener('click', toggleOverlay);
+            });
+        });
+    </script>
 </head>
 <body>
 
     <h1>I Helped Build...</h1>
-    <div class="container">        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/75fa80d8-cba9-4c4e-86dd-18e2b9ec12e3/9b0c4221-5069-445b-9346-f206396ebb69/images/hero.jpg" alt="Snowbound">
-            <div class="content">Snowbound</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/75fa80d8-cba9-4c4e-86dd-18e2b9ec12e3"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/05a4f045-0b4b-4565-a246-38fb6be62a30/57aa7f9d-033d-4a8c-817a-b8c520097011/images/hero.jpg" alt="Boulevard">
-            <div class="content">Boulevard</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/05a4f045-0b4b-4565-a246-38fb6be62a30"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/3d52899a-2a54-49ba-94f7-583eea8be9c8/23ee2667-c19b-4816-a405-8a9a7c308053/images/hero.jpg" alt="High Ground">
-            <div class="content">High Ground</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/3d52899a-2a54-49ba-94f7-583eea8be9c8"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/f0d63c57-f1fb-4a13-892b-975409d85bf5/6c551872-2c63-405f-899b-721f98de940c/images/hero.jpg" alt="Snow Ground">
-            <div class="content">Snow Ground</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/f0d63c57-f1fb-4a13-892b-975409d85bf5"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/3267adf2-857f-4019-b45c-bb0e32cf9d21/9f65f066-0194-4731-b069-7511e503b977/images/hero.jpg" alt="Construct">
-            <div class="content">Construct</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/3267adf2-857f-4019-b45c-bb0e32cf9d21"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/40f3d439-11e7-4bb9-8688-e4b9f967fe57/df482250-80ab-49bf-9353-e82c926183fc/images/hero.jpg" alt="Longshore">
-            <div class="content">Longshore</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/40f3d439-11e7-4bb9-8688-e4b9f967fe57"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/e66bb6d6-8f0b-4b3b-8f76-c8563e73e250/fe2c4d08-c1ec-4249-843a-583c80eed971/images/hero.jpg" alt="Anchored Longshore">
-            <div class="content">Anchored Longshore</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/e66bb6d6-8f0b-4b3b-8f76-c8563e73e250"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/ec1d4f25-8e4a-4cf7-ae48-43fa9e1a3808/641e0e8c-a902-4295-95c4-9e23f14ccec8/images/hero.jpg" alt="The Pit">
-            <div class="content">The Pit</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/ec1d4f25-8e4a-4cf7-ae48-43fa9e1a3808"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/25c721f8-b471-4f7e-96ee-ce776ae177b3/fa50bba3-3aa6-472a-8f7c-c6e56c5724ec/images/hero.jpg" alt="The Bit">
-            <div class="content">The Bit</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/25c721f8-b471-4f7e-96ee-ce776ae177b3"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/440b66a0-c2b3-4156-a09f-bd9137b1aef9/a5b26dfa-cab2-41fe-a134-9cbeb282cd57/images/hero.jpg" alt="The Bit | Blockout">
-            <div class="content">The Bit | Blockout</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/440b66a0-c2b3-4156-a09f-bd9137b1aef9"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/e485bf79-faba-4937-92f1-8425835c89fd/e327349d-34a8-47f6-a703-4c29980235cc/images/hero.jpg" alt="The Arena">
-            <div class="content">The Arena</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/e485bf79-faba-4937-92f1-8425835c89fd"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/dbec076c-e9f2-409f-8f58-5f3d9878c79d/4c1e95a7-bab2-47c8-86f8-0995b0363588/images/hero.jpg" alt="Powerhouse">
-            <div class="content">Powerhouse</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/dbec076c-e9f2-409f-8f58-5f3d9878c79d"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/93e40961-62f2-41f9-87e7-3024536a07db/e111c9dd-c661-4644-9572-367ec8549cad/images/hero.jpg" alt="Powerhouse | Firefight">
-            <div class="content">Powerhouse | Firefight</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/93e40961-62f2-41f9-87e7-3024536a07db"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/97b06ce0-d5ed-49f4-bf52-a01d6b7736f0/8ca9442b-3186-4890-a355-6c03b3ee5e8a/images/hero.jpg" alt="Guardian">
-            <div class="content">Guardian</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/97b06ce0-d5ed-49f4-bf52-a01d6b7736f0"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/3e1e6ec2-25bc-451f-8e21-b47a023d1a8c/bbe074f9-3f47-4a0a-846b-9216081e70c7/images/hero.jpg" alt="New Mombasa">
-            <div class="content">New Mombasa</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/3e1e6ec2-25bc-451f-8e21-b47a023d1a8c"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/8cdefa58-b8f2-48d8-b3dc-b6be81248c9c/b41acd9b-b164-4262-a929-51ae34a06d37/images/hero.jpg" alt="Remains">
-            <div class="content">Remains</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/8cdefa58-b8f2-48d8-b3dc-b6be81248c9c"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/bdf61744-1494-436a-a3f0-13b8fece7db3/0155bd6e-7858-4fdc-8702-463a9e7befab/images/hero.jpg" alt="Frost Point">
-            <div class="content">Frost Point</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/bdf61744-1494-436a-a3f0-13b8fece7db3"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/0b3733fa-e3fe-41b1-a31e-83af2160d729/893b5138-ec11-45d3-af46-b347c56afce5/images/hero.jpg" alt="Firepit">
-            <div class="content">Firepit</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/0b3733fa-e3fe-41b1-a31e-83af2160d729"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/f1ff4cc6-528c-4a6f-9de6-efacd07c4162/8b68503e-dbd7-47a3-a642-199094064e97/images/hero.jpg" alt="Prophet">
-            <div class="content">Prophet</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/f1ff4cc6-528c-4a6f-9de6-efacd07c4162"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/296e4d7f-c776-4b7e-ab01-482739b72351/1b8ccb2e-0703-4474-bd6a-a9dc0e9b5f7a/images/hero.jpg" alt="Eclipse">
-            <div class="content">Eclipse</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/296e4d7f-c776-4b7e-ab01-482739b72351"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/ed6b7ad5-bed8-4526-ab5f-056646937b2e/0925fd61-1c4e-44d8-af74-1fa926d8612a/images/hero.jpg" alt="Horizon">
-            <div class="content">Horizon</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/ed6b7ad5-bed8-4526-ab5f-056646937b2e"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/77772318-a40b-470b-9608-a534dda4bc8d/c22cb47e-6ad2-4454-b5d7-52c567c60575/images/hero.jpg" alt="Barracks">
-            <div class="content">Barracks</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/77772318-a40b-470b-9608-a534dda4bc8d"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/a12d6d0f-2ff1-4927-b85c-b37b43dbdd07/390d5d14-a78c-40b9-a3fa-760ced93f393/images/hero.jpg" alt="Arctic Point | FireFight Ops">
-            <div class="content">Arctic Point | FireFight Ops</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/a12d6d0f-2ff1-4927-b85c-b37b43dbdd07"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/e9ebc90a-bac5-4c68-85e0-a39521d299e3/a8b2d982-0c05-484d-8c02-4ac80e4efc80/images/hero.jpg" alt="Hydro Station | FireFight Ops">
-            <div class="content">Hydro Station | FireFight Ops</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/e9ebc90a-bac5-4c68-85e0-a39521d299e3"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/bdd89f29-4a40-429c-b86d-9190233fe796/011bd106-3b25-4c02-a164-48ba248d0263/images/hero.jpg" alt="Champignon">
-            <div class="content">Champignon</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/bdd89f29-4a40-429c-b86d-9190233fe796"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/9dbf77c1-2cb8-42b3-b202-cdfddd8f282a/d632ba5e-4a78-4805-b203-9e1620a90391/images/hero.jpg" alt="Champion">
-            <div class="content">Champion</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/9dbf77c1-2cb8-42b3-b202-cdfddd8f282a"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/75e12210-bacc-44a0-81ef-023baf4b700a/b7650f86-d73a-4dab-886b-183fc79c1fd3/images/hero.jpg" alt="Firefight Patrol | High Ground">
-            <div class="content">Firefight Patrol | High Ground</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/75e12210-bacc-44a0-81ef-023baf4b700a"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/b1d6622a-30c0-4763-84c4-5a9c624a52e2/019188f0-bf23-4741-bdb0-8520fb77b554/images/hero.jpg" alt="High Ground | Infection">
-            <div class="content">High Ground | Infection</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/b1d6622a-30c0-4763-84c4-5a9c624a52e2"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/9ca264a2-abb9-425f-bfe0-f78283acf140/d405b785-36ee-4813-8aa2-a0299d2e603b/images/hero.jpg" alt="The Pit | Infection">
-            <div class="content">The Pit | Infection</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/9ca264a2-abb9-425f-bfe0-f78283acf140"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/226c4540-38ee-4866-97a2-42799ca419c7/64616335-0539-4665-a98c-4cd2b06791f7/images/hero.jpg" alt="Longshore | Infection">
-            <div class="content">Longshore | Infection</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/226c4540-38ee-4866-97a2-42799ca419c7"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/cc60389c-e959-4419-ac7a-c79c6ea23afc/2b69662e-4aca-4ed9-9a8a-2047e356b6e0/images/hero.jpg" alt="Kusini Bay | Infection">
-            <div class="content">Kusini Bay | Infection</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/cc60389c-e959-4419-ac7a-c79c6ea23afc"></a>
-        </div>        <div class="tile">
-            <img src="https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/4b4c1a7f-14dc-4140-a142-39c7d67174ec/257df585-ee25-49e9-84d7-fecc5f9c5413/images/hero.jpg" alt="Lost And Foundry | Husky Raid">
-            <div class="content">Lost And Foundry | Husky Raid</div>
-            <a href="https://www.halowaypoint.com/halo-infinite/ugc/maps/4b4c1a7f-14dc-4140-a142-39c7d67174ec"></a>
+    <div class="container">        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/75fa80d8-cba9-4c4e-86dd-18e2b9ec12e3/1f6e9a70-a6ab-4d7d-8c6e-5fe78c1bfa9a/images/hero.jpg' alt='Snowbound'>
+            <div class='content'>Snowbound</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Mode and sandbox setup</li><li>Firefight PvE experience</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/75fa80d8-cba9-4c4e-86dd-18e2b9ec12e3'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/05a4f045-0b4b-4565-a246-38fb6be62a30/57aa7f9d-033d-4a8c-817a-b8c520097011/images/hero.jpg' alt='Boulevard'>
+            <div class='content'>Boulevard</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Mode and sandbox setup</li><li>Firefight PvE experience</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/05a4f045-0b4b-4565-a246-38fb6be62a30'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/3d52899a-2a54-49ba-94f7-583eea8be9c8/23ee2667-c19b-4816-a405-8a9a7c308053/images/hero.jpg' alt='High Ground'>
+            <div class='content'>High Ground</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Scripting</li><li>Mode and sandbox setup</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/3d52899a-2a54-49ba-94f7-583eea8be9c8'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/f0d63c57-f1fb-4a13-892b-975409d85bf5/6c551872-2c63-405f-899b-721f98de940c/images/hero.jpg' alt='Snow Ground'>
+            <div class='content'>Snow Ground</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Scripting</li><li>Mode and sandbox setup</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/f0d63c57-f1fb-4a13-892b-975409d85bf5'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/474233e4-b780-4fb2-8d03-0a6bae65afa3/08075f7f-3fdb-488f-8ece-b874ac72ed57/images/hero.jpg' alt='Serenity'>
+            <div class='content'>Serenity</div>
+            <div class='hover-text'>
+                <ul><li>Mode and sandbox setup</li><li>Firefight PvE experience</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/474233e4-b780-4fb2-8d03-0a6bae65afa3'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/3267adf2-857f-4019-b45c-bb0e32cf9d21/9f65f066-0194-4731-b069-7511e503b977/images/hero.jpg' alt='Construct'>
+            <div class='content'>Construct</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Scripting</li><li>Mode and sandbox setup</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/3267adf2-857f-4019-b45c-bb0e32cf9d21'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/40f3d439-11e7-4bb9-8688-e4b9f967fe57/df482250-80ab-49bf-9353-e82c926183fc/images/hero.jpg' alt='Longshore'>
+            <div class='content'>Longshore</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Scripting</li><li>Mode, sandbox + Firefight PvE setup</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/40f3d439-11e7-4bb9-8688-e4b9f967fe57'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/e66bb6d6-8f0b-4b3b-8f76-c8563e73e250/fe2c4d08-c1ec-4249-843a-583c80eed971/images/hero.jpg' alt='Anchored Longshore'>
+            <div class='content'>Anchored Longshore</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Scripting</li><li>Mode and sandbox setup</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/e66bb6d6-8f0b-4b3b-8f76-c8563e73e250'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/ec1d4f25-8e4a-4cf7-ae48-43fa9e1a3808/641e0e8c-a902-4295-95c4-9e23f14ccec8/images/hero.jpg' alt='The Pit'>
+            <div class='content'>The Pit</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Scripting</li><li>Mode and sandbox setup</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/ec1d4f25-8e4a-4cf7-ae48-43fa9e1a3808'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/25c721f8-b471-4f7e-96ee-ce776ae177b3/fa50bba3-3aa6-472a-8f7c-c6e56c5724ec/images/hero.jpg' alt='The Bit'>
+            <div class='content'>The Bit</div>
+            <div class='hover-text'>
+                <ul><li>Solo build</li><li>1-day project</li><li>All art, sandbox, and PvE setup</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/25c721f8-b471-4f7e-96ee-ce776ae177b3'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/440b66a0-c2b3-4156-a09f-bd9137b1aef9/a5b26dfa-cab2-41fe-a134-9cbeb282cd57/images/hero.jpg' alt='The Bit | Blockout'>
+            <div class='content'>The Bit | Blockout</div>
+            <div class='hover-text'>
+                <ul><li>Solo build</li><li>1-day project</li><li>Blockout for sharing</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/440b66a0-c2b3-4156-a09f-bd9137b1aef9'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/e485bf79-faba-4937-92f1-8425835c89fd/e327349d-34a8-47f6-a703-4c29980235cc/images/hero.jpg' alt='The Arena'>
+            <div class='content'>The Arena</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Scripting</li><li>Mode and sandbox setup</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/e485bf79-faba-4937-92f1-8425835c89fd'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/dbec076c-e9f2-409f-8f58-5f3d9878c79d/4c1e95a7-bab2-47c8-86f8-0995b0363588/images/hero.jpg' alt='Powerhouse'>
+            <div class='content'>Powerhouse</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Mode and sandbox setup</li><li>Firefight PvE experience</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/dbec076c-e9f2-409f-8f58-5f3d9878c79d'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/93e40961-62f2-41f9-87e7-3024536a07db/1282ae99-cd60-44b6-83fb-8a4bad050366/images/hero.jpg' alt='Powerhouse | Firefight'>
+            <div class='content'>Powerhouse | Firefight</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Firefight PvE experience</li><li>Sandbox setup</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/93e40961-62f2-41f9-87e7-3024536a07db'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/97b06ce0-d5ed-49f4-bf52-a01d6b7736f0/8ca9442b-3186-4890-a355-6c03b3ee5e8a/images/hero.jpg' alt='Guardian'>
+            <div class='content'>Guardian</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/97b06ce0-d5ed-49f4-bf52-a01d6b7736f0'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/3e1e6ec2-25bc-451f-8e21-b47a023d1a8c/bbe074f9-3f47-4a0a-846b-9216081e70c7/images/hero.jpg' alt='New Mombasa'>
+            <div class='content'>New Mombasa</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Mode setup</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/3e1e6ec2-25bc-451f-8e21-b47a023d1a8c'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/8cdefa58-b8f2-48d8-b3dc-b6be81248c9c/b41acd9b-b164-4262-a929-51ae34a06d37/images/hero.jpg' alt='Remains'>
+            <div class='content'>Remains</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/8cdefa58-b8f2-48d8-b3dc-b6be81248c9c'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/bdf61744-1494-436a-a3f0-13b8fece7db3/0155bd6e-7858-4fdc-8702-463a9e7befab/images/hero.jpg' alt='Frost Point'>
+            <div class='content'>Frost Point</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Scripting</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/bdf61744-1494-436a-a3f0-13b8fece7db3'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/0b3733fa-e3fe-41b1-a31e-83af2160d729/893b5138-ec11-45d3-af46-b347c56afce5/images/hero.jpg' alt='Firepit'>
+            <div class='content'>Firepit</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Scripting</li><li>Mode and sandbox setup</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/0b3733fa-e3fe-41b1-a31e-83af2160d729'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/f1ff4cc6-528c-4a6f-9de6-efacd07c4162/8b68503e-dbd7-47a3-a642-199094064e97/images/hero.jpg' alt='Prophet'>
+            <div class='content'>Prophet</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/f1ff4cc6-528c-4a6f-9de6-efacd07c4162'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/296e4d7f-c776-4b7e-ab01-482739b72351/1b8ccb2e-0703-4474-bd6a-a9dc0e9b5f7a/images/hero.jpg' alt='Eclipse'>
+            <div class='content'>Eclipse</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Scripting</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/296e4d7f-c776-4b7e-ab01-482739b72351'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/ed6b7ad5-bed8-4526-ab5f-056646937b2e/b363fe69-2842-42ab-b037-e1deae961d31/images/hero.jpg' alt='Horizon'>
+            <div class='content'>Horizon</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Mode and sandbox setup</li><li>Firefight PvE experience</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/ed6b7ad5-bed8-4526-ab5f-056646937b2e'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/77772318-a40b-470b-9608-a534dda4bc8d/c22cb47e-6ad2-4454-b5d7-52c567c60575/images/hero.jpg' alt='Barracks'>
+            <div class='content'>Barracks</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Mode and sandbox setup</li><li>Firefight PvE experience</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/77772318-a40b-470b-9608-a534dda4bc8d'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/a12d6d0f-2ff1-4927-b85c-b37b43dbdd07/390d5d14-a78c-40b9-a3fa-760ced93f393/images/hero.jpg' alt='Arctic Point | FireFight Ops'>
+            <div class='content'>Arctic Point | FireFight Ops</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Firefight PvE experience</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/a12d6d0f-2ff1-4927-b85c-b37b43dbdd07'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/e9ebc90a-bac5-4c68-85e0-a39521d299e3/a8b2d982-0c05-484d-8c02-4ac80e4efc80/images/hero.jpg' alt='Hydro Station | FireFight Ops'>
+            <div class='content'>Hydro Station | FireFight Ops</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Firefight PvE experience</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/e9ebc90a-bac5-4c68-85e0-a39521d299e3'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/bdd89f29-4a40-429c-b86d-9190233fe796/011bd106-3b25-4c02-a164-48ba248d0263/images/hero.jpg' alt='Champignon'>
+            <div class='content'>Champignon</div>
+            <div class='hover-text'>
+                <ul><li>Solo build</li><li>1-day project</li><li>All art, sandbox and mode setup</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/bdd89f29-4a40-429c-b86d-9190233fe796'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/9dbf77c1-2cb8-42b3-b202-cdfddd8f282a/d632ba5e-4a78-4805-b203-9e1620a90391/images/hero.jpg' alt='Champion'>
+            <div class='content'>Champion</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Scripting</li><li>Mode and sandbox setup</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/9dbf77c1-2cb8-42b3-b202-cdfddd8f282a'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/75e12210-bacc-44a0-81ef-023baf4b700a/b7650f86-d73a-4dab-886b-183fc79c1fd3/images/hero.jpg' alt='Firefight Patrol | High Ground'>
+            <div class='content'>Firefight Patrol | High Ground</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Scripting</li><li>Mode design</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/75e12210-bacc-44a0-81ef-023baf4b700a'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/b1d6622a-30c0-4763-84c4-5a9c624a52e2/019188f0-bf23-4741-bdb0-8520fb77b554/images/hero.jpg' alt='High Ground | Infection'>
+            <div class='content'>High Ground | Infection</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Mode and sandbox setup</li><li>Scripting</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/b1d6622a-30c0-4763-84c4-5a9c624a52e2'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/9ca264a2-abb9-425f-bfe0-f78283acf140/d405b785-36ee-4813-8aa2-a0299d2e603b/images/hero.jpg' alt='The Pit | Infection'>
+            <div class='content'>The Pit | Infection</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Mode and sandbox setup</li><li>Scripting</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/9ca264a2-abb9-425f-bfe0-f78283acf140'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/226c4540-38ee-4866-97a2-42799ca419c7/64616335-0539-4665-a98c-4cd2b06791f7/images/hero.jpg' alt='Longshore | Infection'>
+            <div class='content'>Longshore | Infection</div>
+            <div class='hover-text'>
+                <ul><li>Art team</li><li>Mode and sandbox setup</li><li>Scripting</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/226c4540-38ee-4866-97a2-42799ca419c7'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/cc60389c-e959-4419-ac7a-c79c6ea23afc/2b69662e-4aca-4ed9-9a8a-2047e356b6e0/images/hero.jpg' alt='Kusini Bay | Infection'>
+            <div class='content'>Kusini Bay | Infection</div>
+            <div class='hover-text'>
+                <ul><li>Art team for Infection</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/cc60389c-e959-4419-ac7a-c79c6ea23afc'></a>
+        </div>        <div class='tile'>
+            <img src='https://blobs-infiniteugc.svc.halowaypoint.com/ugcstorage/map/4b4c1a7f-14dc-4140-a142-39c7d67174ec/257df585-ee25-49e9-84d7-fecc5f9c5413/images/hero.jpg' alt='Lost And Foundry | Husky Raid'>
+            <div class='content'>Lost And Foundry | Husky Raid</div>
+            <div class='hover-text'>
+                <ul><li>Solo build</li><li>Mode and sandbox setup</li>                </ul>
+            </div>
+            <a href='https://www.halowaypoint.com/halo-infinite/ugc/maps/4b4c1a7f-14dc-4140-a142-39c7d67174ec'></a>
         </div>    </div>
     <footer>
-    <p>&copy; 2024 <a href="https://twitter.com/mrgreencastle" target="_blank" style="color: white; text-decoration: none;">Mr Green</a></p>
-    <a href="https://github.com/greenlinks/webforge" target="_blank" style="color: white; text-decoration: none;">How was this made?</a>
-</footer>
+        <p>&copy; 2024 <a href='https://twitter.com/mrgreencastle' target='_blank' style='color: white; text-decoration: none;'>𝕏 Mr Green</a></p>
+        <a href='https://github.com/greenlinks/webforge-gui' target='_blank' style='color: white; text-decoration: none;'>How was this made?</a>
+    </footer>
 </body>
 </html>
