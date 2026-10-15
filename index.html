@@ -204,6 +204,7 @@
   @media (hover: none) and (pointer: coarse) and (max-width: 700px) {
     .card.sel { grid-column: 1 / -1; }
     .card.sel .tile { transform: none; }
+    .grid.has-sel .card:not(.sel) { opacity: 1; filter: none; }   /* keep the rest readable while one tile is open */
     .roles { display: none; }                 /* credits move onto the shot; desktop keeps them under the name */
     .sel .frame::after { opacity: 0; }
     .card.sel .ov { display: block; }
@@ -303,7 +304,25 @@
       { transformOrigin: "0 0", transform: "none" }
     ], { duration: 320, easing: "cubic-bezier(.2,.7,.1,1)" });
   }
-  function select(card) {
+  function flipGrow(el, a, tx, ty) {   // grow around the thumb instead of sliding the card out from under it
+    if (!el || !el.animate || !a) return;
+    var b = el.getBoundingClientRect();
+    if (!b.width || !b.height) return;
+    var sx = a.width / b.width, sy = a.height / b.height;
+    if (Math.abs(sx - 1) < .01 && Math.abs(sy - 1) < .01) return;
+    var ox = (tx == null ? a.left + a.width / 2 : tx) - b.left;
+    var oy = (ty == null ? a.top + a.height / 2 : ty) - b.top;
+    ox = Math.max(0, Math.min(b.width, ox));
+    oy = Math.max(0, Math.min(b.height, oy));
+    var origin = ox + "px " + oy + "px";
+    el.animate([
+      { transformOrigin: origin, transform: "scale(" + sx + "," + sy + ")" },
+      { transformOrigin: origin, transform: "none" }
+    ], { duration: 320, easing: "cubic-bezier(.2,.7,.1,1)" });
+  }
+  var scrollArm = 0, scrollBase = 0;
+  function armScroll() { scrollArm = performance.now() + 450; scrollBase = window.scrollY; }
+  function select(card, tx, ty) {
     if (SEL === card) return;
     var phone = PHONE.matches, first = null, prev = SEL, prevBox = null;
     if (phone && !RM) {
@@ -313,9 +332,13 @@
     if (SEL) SEL.classList.remove("sel");
     SEL = card;
     if (card) { card.style.setProperty("--z", zoomFor(card)); card.classList.add("sel"); }
-    grid.classList.toggle("has-sel", !!card);
-    if (phone && !RM) { flip(card, first); flip(prev, prevBox); }
-    if (phone && card) card.scrollIntoView({ block: "nearest", behavior: RM ? "auto" : "smooth" });
+    grid.classList.toggle("has-sel", !!card && !phone);   // phone stays readable; the open tile is enough
+    if (card) fitTips(card);                               // span already applied, so the ring matches this width
+    if (phone && !RM) {
+      if (card) flipGrow(card, first, tx, ty);
+      if (prev && prev !== card) flip(prev, prevBox);
+    }
+    if (phone) armScroll();
   }
   function fitTips() {
     cards.forEach(function (card) {
@@ -332,13 +355,19 @@
   grid.addEventListener("mouseleave", function () {
     if (HOVER && !(SEL && SEL.contains(D.activeElement))) select(null);
   });
+  addEventListener("scroll", function () {   // phone: scrolling is browsing, so close the open tile
+    if (!PHONE.matches || !SEL) return;
+    if (performance.now() < scrollArm) { scrollBase = window.scrollY; return; }
+    if (Math.abs(window.scrollY - scrollBase) < 16) return;
+    select(null);
+  }, { passive: true });
 
   cards.forEach(function (card) {
     var tile = card.querySelector(".tile");
     card.addEventListener("mouseenter", function () { if (HOVER) select(card); });
     tile.addEventListener("click", function (e) {   // touch: first tap selects; the revealed button then acts
       if (e.target.closest(".wp")) return;
-      if (SEL !== card) { select(card); return; }
+      if (SEL !== card) { select(card, e.clientX, e.clientY); return; }
       if (HOVER) openWaypoint(card);               // mouse: clicking a hovered tile opens Waypoint
     });
     tile.addEventListener("focus", function () { select(card); });
