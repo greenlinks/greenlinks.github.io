@@ -6593,8 +6593,21 @@ function look(p, rx, ry, dt, assist, moving) {
 }
 function resize() {
   DPR = Math.min(W.devicePixelRatio || 1, 2);
-  VW = innerWidth;
-  VH = innerHeight;
+  var v = W.visualViewport;
+  var phone = v && ov && !ov.hidden && matchMedia("(hover: none) and (pointer: coarse)").matches;
+  if (phone) {
+    VW = v.width;
+    VH = v.height;
+    ov.style.right = "auto";
+    ov.style.bottom = "auto";
+    ov.style.top = v.offsetTop + "px";
+    ov.style.left = v.offsetLeft + "px";
+    ov.style.width = v.width + "px";
+    ov.style.height = v.height + "px";
+  } else {
+    VW = innerWidth;
+    VH = innerHeight;
+  }
   var QS = QL * (SPLIT > 2 ? 0.7 : SPLIT > 1 ? 0.8 : 1);
   glc.width = Math.max(2, (VW * DPR * QS) | 0);
   glc.height = Math.max(2, (VH * DPR * QS) | 0);
@@ -12419,6 +12432,19 @@ function init() {
   addEventListener("resize", function () {
     if (!ov.hidden) resize();
   });
+  if (W.visualViewport) {
+    var vvRaf = 0;
+    function onVV() {
+      if (!ov || ov.hidden || !matchMedia("(hover: none) and (pointer: coarse)").matches) return;
+      if (vvRaf) return;
+      vvRaf = requestAnimationFrame(function () {
+        vvRaf = 0;
+        if (!ov.hidden) resize();
+      });
+    }
+    W.visualViewport.addEventListener("resize", onVV);
+    W.visualViewport.addEventListener("scroll", onVV);
+  }
   addEventListener("keydown", onKey, true);
   addEventListener("keyup", onKey, true);
   cv.addEventListener("mousemove", function (e) {
@@ -12477,13 +12503,16 @@ function init() {
       if (state !== "play") return;
       var hitB = null,
         X = e.clientX,
-        Y = e.clientY;
+        Y = e.clientY,
+        box = cv.getBoundingClientRect(),
+        hx = X - box.left,
+        hy = Y - box.top;
       tbtns().forEach(function (b) {
         if (b.k === "u" && !(S && S.ps[0].near)) return;
         if (
           b.rw
-            ? Math.abs(X - b.x) < b.rw / 2 && Math.abs(Y - b.y) < b.rh / 2
-            : Math.hypot(X - b.x, Y - b.y) < b.r + 4
+            ? Math.abs(hx - b.x) < b.rw / 2 && Math.abs(hy - b.y) < b.rh / 2
+            : Math.hypot(hx - b.x, hy - b.y) < b.r + 4
         )
           hitB = b;
       });
@@ -12562,6 +12591,33 @@ function init() {
     } else if (AC && musIv) AC.resume();
   });
 }
+var heldScroll = 0, heldHtmlOverflow = "";
+function holdPage() {
+  D.body.style.overflow = "hidden";
+  if (!matchMedia("(hover: none) and (pointer: coarse)").matches) return;
+  heldScroll = W.scrollY || D.documentElement.scrollTop || 0;
+  heldHtmlOverflow = D.documentElement.style.overflow;
+  D.documentElement.style.overflow = "hidden";
+  W.scrollTo(0, 0);
+  D.body.style.position = "fixed";
+  D.body.style.top = "0";
+  D.body.style.left = "0";
+  D.body.style.right = "0";
+  D.body.style.width = "100%";
+}
+function releasePage() {
+  var phone = matchMedia("(hover: none) and (pointer: coarse)").matches;
+  var y = heldScroll;
+  D.body.style.overflow = "";
+  if (!phone) return;
+  D.body.style.position = "";
+  D.body.style.top = "";
+  D.body.style.left = "";
+  D.body.style.right = "";
+  D.body.style.width = "";
+  D.documentElement.style.overflow = heldHtmlOverflow;
+  W.scrollTo(0, y);
+}
 function open(i) {
   if (!inited) init();
   MSTEP = 0;
@@ -12572,9 +12628,13 @@ function open(i) {
   ui.innerHTML =
     '<div class="nano-in"><div class="nano big">NANO</div><p class="gk">LOADING · ' + mn_ + "</p></div>";
   ui.hidden = false;
-  D.body.style.overflow = "hidden";
   D.body.classList.add("glopen");
+  holdPage();
   resize();
+  if (matchMedia("(hover: none) and (pointer: coarse)").matches)
+    requestAnimationFrame(function () {
+      if (!ov.hidden) resize();
+    });
   keys = {};
   state = "menu";
   mouse.x = VW / 2;
@@ -12612,7 +12672,8 @@ function close() {
   state = "menu";
   keys = {};
   touch = null;
-  D.body.style.overflow = "";
+  releasePage();
+  ov.style.top = ov.style.left = ov.style.right = ov.style.bottom = ov.style.width = ov.style.height = "";
   D.body.classList.remove("glopen");
   ov.classList.remove("playing");
   var t = D.querySelector(".castle") || D.querySelector('.tile[data-idx="' + mapI + '"]'); /* landing page: the castle launched the game */
