@@ -106,6 +106,7 @@
   .frame {
     position: relative; display: block; aspect-ratio: 16 / 9; overflow: hidden;
     background: #141414; border: 1px solid var(--line); transition: border-color .3s, box-shadow .4s var(--ease);
+    container-type: inline-size;   /* tip max-width is 100cqi, not the 22px badge */
   }
   .frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
   /* tilt + parallax: vars set by app3.js on mousemove (fine pointer only) */
@@ -143,10 +144,11 @@
   }
   .mm svg { width: 14px; height: 14px; }
   .tip {
-    position: absolute; left: 0; top: 0; min-height: 22px; width: max-content; max-width: min(250px, 62vw);
+    position: absolute; left: 0; top: 0; min-height: 22px; width: max-content; max-width: calc(100cqi - 16px);
     padding: 6px 10px 6px 28px; border-radius: 11px;
     font: 600 10px/1.3 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--acc);
     background: rgba(10, 10, 10, .92); box-shadow: 0 0 0 1px rgba(155, 226, 45, .6);
+    overflow-wrap: break-word;
     clip-path: inset(0 calc(100% - 22px) calc(100% - 22px) 0 round 11px); opacity: 0; z-index: -1;
     transition: clip-path .35s var(--ease), opacity .2s;
   }
@@ -183,6 +185,12 @@
     .btn { padding: 8px 9px; font-size: 9.5px; letter-spacing: .1em; }
     .acts { padding: 6px; }
     .tip { font-size: 9px; letter-spacing: .08em; }
+  }
+  /* phone: stay two-up to scan; a tap spans the row so the shot is actually readable.
+     desktop hover keeps the 1.08 lift — spanning on mousemove would reshuffle the grid. */
+  @media (hover: none) and (pointer: coarse) and (max-width: 700px) {
+    .card.sel { grid-column: 1 / -1; }
+    .card.sel .tile { transform: none; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition: none !important; animation: none !important; }
@@ -257,19 +265,40 @@
     var w = card.querySelector(".frame").offsetWidth || 1;
     return Math.max(1, Math.min(1.08, 800 / w)).toFixed(3);
   }
+  var PHONE = matchMedia("(hover: none) and (pointer: coarse) and (max-width: 700px)");
+  function flip(el, a) {   // layout already changed; scale back to the rect we measured
+    if (!el || !el.animate || !a) return;
+    var b = el.getBoundingClientRect();
+    if (!b.width || !b.height) return;
+    if (Math.abs(a.left - b.left) < .5 && Math.abs(a.top - b.top) < .5 && Math.abs(a.width - b.width) < .5 && Math.abs(a.height - b.height) < .5) return;
+    el.animate([
+      { transformOrigin: "0 0", transform: "translate(" + (a.left - b.left) + "px," + (a.top - b.top) + "px) scale(" + (a.width / b.width) + "," + (a.height / b.height) + ")" },
+      { transformOrigin: "0 0", transform: "none" }
+    ], { duration: 320, easing: "cubic-bezier(.2,.7,.1,1)" });
+  }
   function select(card) {
     if (SEL === card) return;
+    var phone = PHONE.matches, first = null, prev = SEL, prevBox = null;
+    if (phone && !RM) {
+      if (card) first = card.getBoundingClientRect();
+      if (prev && prev !== card) prevBox = prev.getBoundingClientRect();
+    }
     if (SEL) SEL.classList.remove("sel");
     SEL = card;
     if (card) { card.style.setProperty("--z", zoomFor(card)); card.classList.add("sel"); }
     grid.classList.toggle("has-sel", !!card);
+    if (phone && !RM) { flip(card, first); flip(prev, prevBox); }
+    if (phone && card) card.scrollIntoView({ block: "nearest", behavior: RM ? "auto" : "smooth" });
   }
   function openWaypoint(card) { window.open(card.querySelector(".wp").href, "_blank", "noopener"); }
+
+  grid.addEventListener("mouseleave", function () {
+    if (HOVER && !(SEL && SEL.contains(D.activeElement))) select(null);
+  });
 
   cards.forEach(function (card) {
     var tile = card.querySelector(".tile");
     card.addEventListener("mouseenter", function () { if (HOVER) select(card); });
-    card.addEventListener("mouseleave", function () { if (HOVER && !card.contains(D.activeElement)) select(null); });
     tile.addEventListener("click", function (e) {   // touch: first tap selects; the revealed button then acts
       if (e.target.closest(".wp")) return;
       if (SEL !== card) { select(card); return; }
