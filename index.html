@@ -320,8 +320,6 @@
       { transformOrigin: origin, transform: "none" }
     ], { duration: 320, easing: "cubic-bezier(.2,.7,.1,1)" });
   }
-  var scrollArm = 0, scrollBase = 0;
-  function armScroll() { scrollArm = performance.now() + 450; scrollBase = window.scrollY; }
   function select(card, tx, ty) {
     if (SEL === card) return;
     var phone = PHONE.matches, first = null, prev = SEL, prevBox = null;
@@ -338,7 +336,6 @@
       if (card) flipGrow(card, first, tx, ty);
       if (prev && prev !== card) flip(prev, prevBox);
     }
-    if (phone) armScroll();
   }
   function fitTips() {
     cards.forEach(function (card) {
@@ -355,13 +352,6 @@
   grid.addEventListener("mouseleave", function () {
     if (HOVER && !(SEL && SEL.contains(D.activeElement))) select(null);
   });
-  addEventListener("scroll", function () {   // phone: scrolling is browsing, so close the open tile
-    if (!PHONE.matches || !SEL) return;
-    if (performance.now() < scrollArm) { scrollBase = window.scrollY; return; }
-    if (Math.abs(window.scrollY - scrollBase) < 16) return;
-    select(null);
-  }, { passive: true });
-
   cards.forEach(function (card) {
     var tile = card.querySelector(".tile");
     card.addEventListener("mouseenter", function () { if (HOVER) select(card); });
