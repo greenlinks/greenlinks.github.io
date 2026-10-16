@@ -528,7 +528,7 @@
 
   window._tiles = { get sel() { return SEL ? cards.indexOf(SEL) : -1; } };   // test hook (read-only)
 })();
-/* GREENLINKS // FORGE SIM — lazy-initialised easter egg FPS (raw WebGL). Built from src/*.js by build2.py. */
+/* GREENLINKS // FORGE SIM — synced from nano-game/index.html */
 (function(){
 "use strict";
 /* World scale and physics constants: the single source of truth for unit conversion.
@@ -1853,7 +1853,7 @@ function mkProps() {
       y: p.y,
       vx: 0,
       vy: 0,
-      z: 0,
+      z: ground(p.x, p.y),
       vz: 0,
       a: 0,
       va: 0,
@@ -1986,7 +1986,7 @@ function propHit(p, dmg, src, ix, iy) {
     p.hp -= dmg;
     if (p.hp <= 0) {
       S.props.splice(S.props.indexOf(p), 1);
-      boom({ x: p.x, y: p.y, o: src, big: 1, dmg: 120, dmin: 10 }); /* bak12 barrel damage: 110*(1-d/R)+10 */
+      boom({ x: p.x, y: p.y, z: ground(p.x, p.y) + p.h * 0.45, o: src, big: 1, dmg: 120, dmin: 10, barrel: 1 }); /* bak12 barrel damage: 110*(1-d/R)+10 */
     }
   }
 }
@@ -2270,7 +2270,8 @@ function rumble(lvl, pl) {
     var p = pads[i];
     if (pl && (pl.dev === "km" || (typeof pl.dev === "number" && p && p.index !== pl.dev))) continue;
     if (p && p.connected && p.vibrationActuator && p.vibrationActuator.playEffect) {
-       try {
+      /*DEV*/ rumLog.push(["dual-rumble", { lvl: lvl }, pl ? pl.id : -1]);
+      /*END*/ try {
         p.vibrationActuator
           .playEffect("dual-rumble", { duration: P[0], strongMagnitude: P[1], weakMagnitude: P[2] })
           .catch(function () {});
@@ -2366,7 +2367,9 @@ function rfx(d, st, wk, tr, delay, pl) {
       o.leftTrigger = tm === "leftTrigger" ? tr : 0;
       o.rightTrigger = tm === "rightTrigger" ? tr : 0;
     }
-     try {
+    /*DEV*/ rumLog.push([ty, o, pl ? pl.id : -1]);
+    if (rumLog.length > 300) rumLog.shift();
+    /*END*/ try {
       var r = a.playEffect(ty, o);
       r && r.catch && r.catch(function () {});
     } catch (e) {}
@@ -2958,9 +2961,13 @@ function say(t, col, p) {
 var DMGL = [];
 function damage(p, d, src, kind, head) {
   if (p.dead || p.inv > 0 || S.over) return;
-   if (mode === "ff" && p.hum && src && src.cov)
+  /*DEV*/ DMGL.push([p.id, Math.round(d), kind, src ? src.id : -1]);
+  if (DMGL.length > 5000) DMGL.shift();
+  /*END*/ if (mode === "ff" && p.hum && src && src.cov)
     d *= { easy: 0.45, normal: 0.62, heroic: 0.8, legendary: 1 }[ffd()] || 0.62;
-  /* Covenant damage to players scales with Firefight difficulty */  if (mode === "ff" && FF && (p.cov || (src && src.hum && kind === "melee")))
+  /* Covenant damage to players scales with Firefight difficulty */ /*DEV*/ if (p.hum && src && src.cov)
+    FFST.dmg += d;
+  /*END*/ if (mode === "ff" && FF && (p.cov || (src && src.hum && kind === "melee")))
     d = p.cov ? ffDmg(p, d, src, kind) : (ffDmg(p, d, src, kind), d);
   p.zl = 0;
   p.rd = H3.shDelay;
@@ -3242,7 +3249,7 @@ var WPN = {
     dmg: 95,
     spd: 6000,
     life: 0.35,
-    spr: 0.03,
+    spr: 0.09,
     sprZ: 0,
     hk: 2,
     zoom: [2, 8],
@@ -3453,7 +3460,8 @@ function fire(p, np) {
 }
 var FFST = { sh: {}, dmg: 0 };
 function shot(p, W_, s) {
-   var oc = p.ocNow && W_.charge;
+  /*DEV*/ if (p.cov) FFST.sh[p.ty] = (FFST.sh[p.ty] || 0) + 1;
+  /*END*/ var oc = p.ocNow && W_.charge;
   s.mag = Math.max(0, s.mag - (oc ? 10 : 1));
   if (!W_.burst) p.cd = Math.max(-0.034, Math.min(0, p.cd)) + W_.rof;
   /* keep the sub-frame remainder so 10/s really is 10/s */ var spr = W_.spr;
@@ -3611,6 +3619,21 @@ function shoot(p, sp, W_, sil, oc) {
     sy: mz.y,
     sz: mz.z,
   });
+  if ((W_.id === "sniper" || W_.id === "beam") && S.part.length < PCAP) {
+    S.part.push({
+      trail: 1,
+      x: mz.x,
+      y: mz.y,
+      z: mz.z,
+      ex: ax,
+      ey: ay,
+      ez: az,
+      l: 1.9,
+      m: 1.9,
+      hold: 1.5,
+      c: W_.id === "beam" ? "#8cf" : "#fff",
+    });
+  }
   if (sil) return;
   p.fireT = 0.4;
   p.flash = 0.05;
@@ -3788,10 +3811,10 @@ function boom(g) {
       vz: 0.5 * PJK * VR,
       vx: 0,
       vy: 0,
-      l: 0.4,
-      m: 0.4,
-      c: "#fc8",
-      s: PJ.blast.fire * 0.45 * VR,
+      l: g.barrel ? 0.55 : 0.4,
+      m: g.barrel ? 0.55 : 0.4,
+      c: g.barrel ? "#ff6" : "#fc8",
+      s: PJ.blast.fire * (g.barrel ? 0.7 : 0.45) * VR,
     });
   S.props.slice().forEach(function (q) {
     /* copy: a detonating barrel splices S.props mid-loop and used to make the next prop skip this blast */
@@ -3806,10 +3829,10 @@ function boom(g) {
   addP(
     x,
     y,
-    Math.round(40 * Math.min(1.3, VR)),
-    g.pl ? "#6af" : "#fa4",
+    Math.round((g.barrel ? 55 : 40) * Math.min(1.3, VR)),
+    g.pl ? "#6af" : g.barrel ? "#ff4" : "#fa4",
     380 * 0.55 * VR,
-    0.7,
+    g.barrel ? 0.85 : 0.7,
     3 * Math.min(1, VR),
     (g.z || 0) + PJ.blast.pz * VR,
   );
@@ -3994,7 +4017,7 @@ WPN.beam = {
   dmg: 80,
   spd: 6000,
   life: 0.35,
-  spr: 0.02,
+  spr: 0.08,
   sprZ: 0,
   hk: 2,
   zoom: [2, 8],
@@ -5402,7 +5425,7 @@ function update(dt) {
       S.part.splice(i, 1);
       continue;
     }
-    if (!q.ring) {
+    if (!q.ring && !q.trail) {
       q.x += q.vx * dt;
       q.y += q.vy * dt;
       q.vx *= 0.92;
@@ -5588,7 +5611,8 @@ function V(p, c, a) {
   if (dn >= 159990) return;
   if (DSC !== 1)
     p = [DO[0] + (p[0] - DO[0]) * DSC, DO[1] + (p[1] - DO[1]) * DSC, DO[2] + (p[2] - DO[2]) * DSC];
-   var o = dn * 7;
+  /*DEV*/ if (VCAP && a >= 0) VCAP.push(p[0], p[1], p[2]);
+  /*END*/ var o = dn * 7;
   DB[o] = p[0];
   DB[o + 1] = p[1];
   DB[o + 2] = p[2];
@@ -5630,7 +5654,7 @@ function box(o, f, hf, hr, h, c, a, flat) {
 }
 /* M9 frag pickup, low-poly: rounded olive body (3 stacked octagonal bands), grey fuse cap, spoon down one side; slow hover spin */
 function fragPk(o, rot) {
-  var A = ASC * 3.4 /* pickup reads at the old pickup size (0.47 Spartan heights), like other Halo pickups */,
+  var A = ASC * 0.9 /* match plasma grenade pickup size */,
     G = [0.33, 0.38, 0.22],
     y0 = o[1] - 0.15 * A,
     f = [Math.cos(rot), 0, Math.sin(rot)];
@@ -7126,7 +7150,7 @@ function drawView(dt, me, vi, inG) {
   kothDraw();
   S.fc.forEach(function (c) {
     if (c.t > 0) return;
-    var o = W3(c.x, c.y, ground(c.x, c.y));
+    var o = W3(c.x, c.y, ground(c.x, c.y) + 0.06 * ASC);
     prism(o, 7, 0.3 * ASC, 0.12 * ASC, 0, [0.25, 0.25, 0.27]);
     prism([o[0], o[1] + 0.12 * ASC, o[2]], 7, 0.26 * ASC, 0.8 * ASC, S.t * 0.2, [1, 0.55, 0.12]);
     prism([o[0], o[1] + 0.92 * ASC, o[2]], 7, 0.3 * ASC, 0.12 * ASC, 0, [0.25, 0.25, 0.27]);
@@ -7250,6 +7274,15 @@ function drawView(dt, me, vi, inG) {
   S.part.forEach(function (q) {
     var a = q.l / q.m,
       c = hx(q.c);
+    if (q.trail) {
+      var hold = q.hold || 0,
+        fade = Math.max(0.01, q.m - hold),
+        ta = q.l > hold ? 1 : Math.max(0, q.l / fade);
+      var w_ = 0.22 * ASC * (0.6 + ta * 0.6);
+      seg(W3(q.x, q.y, q.z), W3(q.ex, q.ey, q.ez), w_, c, ta * 0.95);
+      seg(W3(q.x, q.y, q.z), W3(q.ex, q.ey, q.ez), w_ * 0.4, [1, 1, 1], ta * 0.8);
+      return;
+    }
     if (q.ring) {
       var R2 = (q.r / PXM) * (1 - a * 0.7),
         o = W3(q.x, q.y, q.z || 0.1);
@@ -7371,7 +7404,18 @@ function icon(g, def, x, y, w, h, col, al) {
   g.globalAlpha = 1;
 }
 function reticle(g, W_, x, y, col, me) {
-   g.strokeStyle = col;
+  /*DEV*/ var tf = g.getTransform();
+  HUDBOX.push({
+    v: me.id,
+    lane: "ret",
+    ret: (13 * tf.a) / DPR,
+    vh: VH,
+    x0: -1e4,
+    x1: -1e4,
+    y0: -1e4,
+    y1: -1e4,
+  });
+  /*END*/ g.strokeStyle = col;
   g.fillStyle = col;
   g.lineWidth = 1.5;
   var r,
@@ -7817,7 +7861,8 @@ function scoreboard(g, vw, vh, F) {
       g.fillText(v, x + cols[j][1], ry);
     });
   });
-   if (mode === "ff" && FF) ffSkPanel(g, x, y + h + 10, w, vh, F, SBME.id);
+  /*DEV*/ HUDBOX.push({ v: SBME.id, lane: "sbt", x0: x, x1: x + w, y0: y, y1: y + h, vw: 0, vh: vh });
+  /*END*/ if (mode === "ff" && FF) ffSkPanel(g, x, y + h + 10, w, vh, F, SBME.id);
 }
 function hud(g, me) {
   var F_ = me.fx,
@@ -7858,7 +7903,18 @@ function hud(g, me) {
       g.fillStyle = col;
       g.textAlign = "center";
       g.fillText(t, vw / 2, y);
-      
+      /*DEV*/ var w = g.measureText(t).width,
+        fs = parseFloat(font.split(" ")[1]);
+      HUDBOX.push({
+        v: me.id,
+        lane: lane,
+        x0: vw / 2 - w / 2,
+        x1: vw / 2 + w / 2,
+        y0: y - fs / 2,
+        y1: y + fs / 2,
+        vw: vw,
+        vh: vh,
+      }); /*END*/
     };
   /* curved segmented shield bar (Halo 3) + CE-style health ticks */
   var cxs = vw / 2,
@@ -8135,7 +8191,17 @@ function hud(g, me) {
     var lm = F_.med[F_.med.length - 1];
     g.globalAlpha = clamp(lm.l, 0, 1);
     ctext(lm.n, LN.medN, "800 12px" + F, "#fff", "medN");
-     g.globalAlpha = 1;
+    /*DEV*/ HUDBOX.push({
+      v: me.id,
+      lane: "med",
+      x0: x0 - 25,
+      x1: x0 + (F_.med.length - 1) * bw + 25,
+      y0: my_ - 29,
+      y1: my_ + 29,
+      vw: vw,
+      vh: vh,
+    });
+    /*END*/ g.globalAlpha = 1;
     g.font = "700 12px" + F;
     g.textAlign = "left";
   }
@@ -8232,7 +8298,18 @@ function hud(g, me) {
         if (r[4] && r[3] - t0 + 2 < vh * 0.5) wy = r[3] - t0 + 2;
         else a = Math.min(a, 0.22);
       });
-       return [wx, wy, a];
+      /*DEV*/ HUDBOX.push({
+        v: me.id,
+        lane: "nav",
+        x0: wx - 52,
+        x1: wx + 52,
+        y0: wy + t0,
+        y1: wy + t1,
+        vw: vw,
+        vh: vh,
+        a: a,
+      });
+      /*END*/ return [wx, wy, a];
     };
   MK_ = [];
   OBJMK = OBJMK.filter(function (o) {
@@ -8243,7 +8320,7 @@ function hud(g, me) {
     var T_ = q.w,
       M = lastM,
       X = q.x / PXM,
-      Y = ground(q.x, q.y) + 1.9,
+      Y = ground(q.x, q.y) + 1.15,
       Z = q.y / PXM,
       cxp = M[0] * X + M[4] * Y + M[8] * Z + M[12],
       cyp = M[1] * X + M[5] * Y + M[9] * Z + M[13],
@@ -8289,7 +8366,7 @@ function hud(g, me) {
       var o_ = S.os,
         M = lastM,
         X = o_.x / PXM,
-        Y = ground(o_.x, o_.y) + 2,
+        Y = ground(o_.x, o_.y) + 1.2,
         Z = o_.y / PXM,
         cxp = M[0] * X + M[4] * Y + M[8] * Z + M[12],
         cyp = M[1] * X + M[5] * Y + M[9] * Z + M[13],
@@ -10524,7 +10601,7 @@ function covDraw(p) {
     B(0.92, 1.1, 0.62, 0.06, 0.08, 0.14, [0.3, 1, 0.35]);
   }
   if (p.ty !== "h" && p.ty !== "es" && !p.kzA)
-    mdl(p.ty === "j" ? P(0.5, 0.86, 0.34) : P(0.35, T.H * 0.48, 0.24), f, WPN[cw(p).id], 0.9);
+    mdl(p.ty === "j" ? P(0.5, 0.86, 0.34) : p.ty === "e" || p.ty === "es" ? P(0.48, T.H * 0.78, 0.32) : P(0.35, T.H * 0.48, 0.24), f, WPN[cw(p).id], 0.9);
 }
 function covFX(p) {
   var o = W3(p.x, p.y, p.z),
@@ -10768,7 +10845,7 @@ function ffSkPanel(g, x, y, w, vh, F, v) {
   g.font = "700 11px" + F;
   g.textAlign = "left";
   g.fillText("ACTIVE SKULLS · SCORE ×" + FF.mult.toFixed(2), x + 14, y + 15);
-  
+  /*DEV*/ HUDBOX.push({ v: v, lane: "skh", x0: x, x1: x + w, y0: y, y1: y + 22, vw: 0, vh: vh }); /*END*/
   var yy = y + 28;
   ks.forEach(function (k, i) {
     var rh = Math.max(22, rows[i].length * (fs + 3) + 6),
@@ -10793,7 +10870,8 @@ function ffSkPanel(g, x, y, w, vh, F, v) {
     rows[i].forEach(function (l, j) {
       g.fillText(l, x + 140, yy + 3 + (fs + 3) / 2 + j * (fs + 3) + (rh - rows[i].length * (fs + 3) - 6) / 2);
     });
-     yy += rh;
+    /*DEV*/ HUDBOX.push({ v: v, lane: "sk" + i, x0: x, x1: x + w, y0: yy, y1: yy + rh - 1, vw: 0, vh: vh });
+    /*END*/ yy += rh;
   });
 }
 /* Firefight music: original D-minor action loop, layers follow the fight (base → drums+bass on drop-in → arps/lead with wave, round, enemies) */
@@ -12582,7 +12660,18 @@ function init() {
   addEventListener("blur", function () {
     if (!ov.hidden && state === "play") pause();
   });
-  
+  /*DEV*/ W._gl_touch = function () {
+    return {
+      lay: tlay(),
+      ko: TKO,
+      safe: safe(),
+      gx: ov.querySelector(".gx").getBoundingClientRect().toJSON(),
+    };
+  };
+  W._gl_safe = function (o) {
+    SAFE = o;
+    if (o) o._dev = 1;
+  }; /*END*/
   D.addEventListener("visibilitychange", function () {
     if (ov.hidden) return;
     if (D.hidden) {
@@ -12681,7 +12770,758 @@ function close() {
 }
 W.GLGame = {
   launch: open,
-  close: close ,
+  close: close /*DEV*/,
+  _ttk: function (id, head, dist, pre) {
+    var sv = grid,
+      svH = HV,
+      me = S.ps[0],
+      d = S.ps[1],
+      g2 = new Uint8Array(GW * GH);
+    for (var i = 0; i < GW * GH; i++) {
+      var x = i % GW,
+        y = (i / GW) | 0;
+      g2[i] = x === 0 || y === 0 || x === GW - 1 || y === GH - 1 ? 1 : 0;
+    }
+    grid = g2;
+    HV = null;
+    S.bul = [];
+    S.gren = [];
+    S.props = [];
+    S.ps.forEach(function (q, i) {
+      if (i > 1) {
+        q.dead = true;
+        q.rt = 1e9;
+        q.x = -999;
+      }
+    });
+    spawn(me, { x: AW / 2 - (dist * PXM) / 2, y: AH / 2 });
+    spawn(d, { x: AW / 2 + (dist * PXM) / 2, y: AH / 2 });
+    me.inv = 0;
+    d.inv = 0;
+    me.wp[0] = slot(id);
+    me.w = 0;
+    d.a = Math.PI;
+    me.cd = 0;
+    var T0 = S.t,
+      first = -1,
+      last = 0,
+      LM_ = WPN[id].mag,
+      shots = 0,
+      tz = (head ? 1.59 : 1.0) * ASC;
+    if (pre === "melee") {
+      damage(d, H3.melee, me, "melee");
+      first = S.t;
+      last = S.t;
+    }
+    if (pre === "oc") {
+      d.sh = 0;
+      d.rd = H3.shDelay;
+      first = S.t;
+      last = S.t;
+    }
+    S.test = function (p, dt) {
+      var dx = d.x - me.x,
+        dy = d.y - me.y,
+        ez = eyeZ(me);
+      me.a = Math.atan2(dy, dx);
+      me.pt = Math.atan2((d.z + tz - ez) * PXM, Math.hypot(dx, dy));
+      var m = cw(me).mag;
+      if (m < LM_) {
+        shots += LM_ - m;
+        if (first < 0) first = S.t;
+        last = S.t;
+      }
+      LM_ = m;
+      fire(me, me.cd <= 0 && me.burst <= 0);
+      m = cw(me).mag;
+      if (m < LM_) {
+        shots += LM_ - m;
+        if (first < 0) first = S.t;
+        last = S.t;
+      }
+      LM_ = m;
+    };
+    var n = 0;
+    while (!d.dead && n++ < 120 * 15) update(1 / 120);
+    S.test = null;
+    grid = sv;
+    HV = svH;
+    var r = {
+      dead: d.dead,
+      ttk: d.dead ? +(last - first).toFixed(3) : null,
+      hit: d.dead ? +(S.t - first).toFixed(3) : null,
+      shots: shots,
+    };
+    d.dead = false;
+    return r;
+  },
+  _edges: function (n) {
+    S.time = 1e9;
+    S.over = false;
+    S.goal = 1e9;
+    var me = S.ps[0],
+      R = { cases: 0, stuck: 0, nan: 0, floating: 0, maxMs: 0, fails: [] },
+      cells = [];
+    for (var c = 0; c < GW * GH; c++) if (grid[c] === 2 || grid[c] === 3) cells.push(c);
+    var step = Math.max(1, Math.floor(cells.length / n));
+    cells = cells
+      .filter(function (c, i) {
+        return i % step === 0;
+      })
+      .slice(0, n);
+    S.props.slice(0, 6).forEach(function (q, i) {
+      cells.push(-1 - i);
+    });
+    S.ps.forEach(function (q, i) {
+      if (i > 0) {
+        q.dead = true;
+        q.rt = 1e9;
+      }
+    });
+    cells.forEach(function (c) {
+      [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ].forEach(function (d) {
+        [0, 1].forEach(function (jmp) {
+          var x, y;
+          if (c < 0) {
+            var q = S.props[-1 - c];
+            if (!q) return;
+            x = q.x - d[0] * 14;
+            y = q.y - d[1] * 14;
+          } else {
+            x = ((c % GW) + 0.5) * C;
+            y = (((c / GW) | 0) + 0.5) * C;
+          }
+          me.dead = false;
+          me.x = x;
+          me.y = y;
+          me.z = onLow(me);
+          me.vx = me.vy = me.vz = 0;
+          me.a = Math.atan2(d[1], d[0]);
+          me.inv = 1e9;
+          var t = 0,
+            mx = 0;
+          S.test = function (p, dt) {
+            moveP(p, d[0], d[1], dt);
+            if (jmp && t > 0.05 && t < 0.1) jump(p);
+          };
+          for (var k = 0; k < 156; k++) {
+            if (k === 96)
+              S.test = function (p, dt) {
+                moveP(p, 0, 0, dt);
+              };
+            var t0 = performance.now();
+            update(1 / 60);
+            t += 1 / 60;
+            mx = Math.max(mx, performance.now() - t0);
+          }
+          S.test = null;
+          var mv = Math.hypot(me.x - x, me.y - y) / C,
+            cx_ = Math.floor(x / C) + d[0],
+            cy_ = Math.floor(y / C) + d[1],
+            out = cx_ < 0 || cy_ < 0 || cx_ >= GW || cy_ >= GH,
+            nc = cy_ * GW + cx_,
+            legit = c < 0 || out || grid[nc] === 1 || cabs(nc) - cabs(c) > 0.55;
+          R.cases++;
+          R.maxMs = Math.max(R.maxMs, mx);
+          if (!isFinite(me.x + me.y + me.z)) R.nan++;
+          if (me.z > onLow(me) + 0.05) {
+            R.floating++;
+            if (!R.fl) R.fl = [];
+            if (R.fl.length < 5)
+              R.fl.push([
+                c,
+                d,
+                jmp,
+                +me.z.toFixed(2),
+                +onLow(me).toFixed(2),
+                +me.vz.toFixed(2),
+                grid[Math.floor(me.y / C) * GW + Math.floor(me.x / C)],
+                +(me.x % C).toFixed(1),
+                +(me.y % C).toFixed(1),
+              ]);
+          }
+          if (mv < 0.6 && !legit) {
+            R.stuck++;
+            if (R.fails.length < 8) R.fails.push([c, d, jmp, +mv.toFixed(2)]);
+          }
+        });
+      });
+    });
+    return R;
+  },
+  _mv: function (p, a, b, dt) {
+    moveP(p, a, b, dt);
+  },
+  _jp: function (p) {
+    jump(p);
+  },
+  _up: function (dt) {
+    update(dt);
+  },
+  _aim: function (id, h, yoff, dist) {
+    var me = S.ps[0],
+      o = S.ps[1];
+    o.dead = false;
+    o.x = me.x + dist * PXM;
+    o.y = me.y;
+    o.z = me.z;
+    o.chs = 1;
+    me.chs = 1;
+    me.eh = 0.62 * WU0;
+    me.wp[0] = slot(id);
+    me.w = 0;
+    var ez = eyeZ(me),
+      d = dist * PXM;
+    me.a = Math.atan2(yoff * PXM, d);
+    me.pt = Math.atan2((o.z + h - ez) * PXM, d);
+    var r = hbox(me, o, ez, HBX[id] || 0);
+    r.pt = me.pt;
+    return r;
+  },
+  _hurt: function (i, d) {
+    damage(S.ps[0], d || 10, S.ps[i], "Assault Rifle");
+  },
+  _kill: function () {
+    kill(S.ps[0], S.ps[1], "melee");
+  },
+  _rum: function () {
+    return rumLog;
+  },
+  _hum: function () {
+    return humN ? { f: humN.o.frequency.value, lfo: humN.l.frequency.value, k: humN.k } : null;
+  },
+  _medal: function () {
+    var me = S.ps[0];
+    for (var i = 1; i < 4; i++) {
+      S.ps[i].dead = false;
+      S.ps[i].inv = 0;
+      S.ps[i].sh = 0;
+      S.ps[i].hp = 1;
+      damage(S.ps[i], 50, me, "Sniper Rifle", 2);
+    }
+  },
+  _ter: function () {
+    return { t: TER, b: STY.b, arch: ARCH, gw: GW };
+  },
+  _dbg: function () {
+    return {
+      map: mapI,
+      set: SET,
+      cfg: cfg(),
+      s: S,
+      p: S && S.ps[0],
+      pads: S && S.pads,
+      state: state,
+      focus: focusI,
+      btn: btns().map(function (b) {
+        return b.textContent;
+      }),
+    };
+  },
+  _auto: function (v) {
+    autoP = v;
+  },
+  _padm: function () {
+    return PADM;
+  },
+  _ctopAbs: function (c) {
+    var cx_ = c % GW,
+      cy_ = (c / GW) | 0,
+      h0 = TH((cx_ + 0.5) * C, (cy_ + 0.5) * C);
+    return grid[c] === 1 ? h0 + wallH(c) : h0 + ctop(c);
+  },
+  _sky: function () {
+    return { p: SKYP, fog: FOG, jump: H3.jumpH, sky: arena.sky || null };
+  },
+  _menu: function () {
+    return JSON.stringify({
+      set: SET,
+      map: mapI,
+      nlp: NLP,
+      tab: STAB,
+    });
+  },
+  _zoom: function (p) {
+    return { zl: p.zl, zf: ZF(p), zc: ZFs(p) };
+  },
+  _ret: function (g, id, x, y, col, me) {
+    var w = me.wp[me.w],
+      o = w.id;
+    w.id = id;
+    reticle(g, WPN[id], x, y, col, me);
+    w.id = o;
+  },
+  _gr: function () {
+    return {
+      PKH: PKH,
+      list: S.gren,
+      thr: function (p, pl) {
+        p.gc = 0;
+        throwG(p, pl);
+      },
+      sw: function (p) {
+        gswap(p);
+      },
+    };
+  },
+  _lay: function () {
+    var dg = Math.hypot(AW, AH);
+    return {
+      base: FF && FF.base,
+      dg: dg,
+      pw: S.pads
+        .filter(function (q) {
+          return q.pw;
+        })
+        .map(function (q) {
+          return { w: q.w, x: q.x, y: q.y };
+        }),
+      stock: S.pads.filter(function (q) {
+        return q.stock;
+      }).length,
+      AW: AW,
+      AH: AH,
+    };
+  },
+  _title: function () {
+    return D.title;
+  },
+  _st: function (r) {
+    if (r) FFST = { sh: {}, dmg: 0 };
+    return FFST;
+  },
+  _fl: function () {
+    return { rf: RF(), flash: S.flash, flT: S.flT };
+  },
+  _qh: function (x, y) {
+    return QH(x, y);
+  },
+  _mus: function () {
+    return {
+      L: FM.L,
+      lvl: FM.lvl,
+      bpm: FM.bpm,
+      stg: FM.stg,
+      duck: FM.ffG ? FM.ffG.gain.value : null,
+      musG: musG ? musG.gain.value : null,
+    };
+  },
+  _in: function () {
+    return LASTIN;
+  },
+  _W: function () {
+    return WPN;
+  },
+  _hz: function () {
+    var me = S.ps[0];
+    return { hz: !!me.fx.hz, aim: !!hzAim(me), assist: aimT(me, 0, 0.3) };
+  },
+  _ff: function () {
+    return {
+      FF: FF,
+      CT: CT,
+      spawn: function (ty, x, y, o) {
+        var p = mkCov(ty, x, y, o || {});
+        p.drop = 0;
+        p.inv = 0;
+        p.z = ground(p.x, p.y);
+        return p;
+      },
+      cov: function () {
+        return S.ps.filter(function (p) {
+          return p.cov && !p.dead;
+        });
+      },
+      flush: function () {
+        FF.q.forEach(function (q) {
+          q.t = 0;
+        });
+      },
+      clear: function () {
+        S.ps.forEach(function (p) {
+          if (p.cov && !p.dead) {
+            p.inv = 0;
+            kill(p, S.ps[0], "Battle Rifle");
+          }
+        });
+      },
+      shot: function (o, back, zf, w) {
+        var me = S.ps[0],
+          a = o.a + (back ? Math.PI : 0),
+          x = o.x + Math.cos(a) * 70,
+          y = o.y + Math.sin(a) * 70,
+          W_ = WPN[w || "br"];
+        S.bul.push({
+          x: x,
+          y: y,
+          z: o.z + CT[o.ty].H * zf,
+          vx: -Math.cos(a) * 2400,
+          vy: -Math.sin(a) * 2400,
+          vz: 0,
+          o: me,
+          l: 0.5,
+          d: W_.dmg,
+          w: W_,
+          sx: x,
+          sy: y,
+          sz: o.z,
+        });
+      },
+    };
+  },
+  _mk: function () {
+    return MK_;
+  },
+  _go: function (m) {
+    MMODE = m;
+    act("m_start");
+  },
+  _ms: function () {
+    return { step: MSTEP, mode: MMODE, state: state };
+  },
+  _aa: function () {
+    return {
+      AAT: AAT,
+      last: MAGL0,
+      cone: function (id, d, w) {
+        var me = S.ps[0],
+          t = AAT[id];
+        return t ? (w ? (d <= t.mr ? t.mg : 0) : d <= t.ar ? t.aa : 0) : 0;
+      },
+    };
+  },
+  _teams: function () {
+    return S.ps.map(function (p) {
+      return { id: p.id, hum: p.hum, team: p.team, x: p.x, y: p.y, col: p.col };
+    });
+  },
+  _en: function (a, b) {
+    return enemies(S.ps[a], S.ps[b]);
+  },
+  _nm: function (m, L) {
+    mode = m;
+    LOCAL = L;
+    newMatch();
+    return S.ps.length;
+  },
+  _spawn: function (i) {
+    var p = S.ps[i];
+    p.placed = 0;
+    spawn(p);
+    return { x: p.x, y: p.y };
+  },
+  _gb: function (x, y, vx, vy, vz) {
+    var g = { x: x, y: y, z: ground(x, y), vx: vx, vy: vy, vz: vz };
+    gBounce(g);
+    return { vx: g.vx, vy: g.vy, vz: g.vz, n: gNorm(x, y), gz: ground(x, y) };
+  },
+  _ctf: function () {
+    return {
+      flags:
+        S.flags &&
+        S.flags.map(function (f) {
+          return {
+            team: f.team,
+            x: f.x,
+            y: f.y,
+            hx: f.hx,
+            hy: f.hy,
+            car: f.car ? f.car.id : null,
+            dropT: f.dropT,
+            z: ground(f.x, f.y),
+          };
+        }),
+      mk: OBJMK.slice(),
+      has: function (i) {
+        return hasFlag(S.ps[i]);
+      },
+      drop: function (i) {
+        dropFlag(S.ps[i]);
+      },
+      fire: function (i) {
+        var p = S.ps[i],
+          n = S.bul.length;
+        p.cd = 0;
+        p.rl = 0;
+        fire(p, true);
+        return S.bul.length - n;
+      },
+      thr: function (i) {
+        var p = S.ps[i],
+          n = S.gren.length;
+        p.gc = 0;
+        p.gren = 2;
+        throwG(p, 0);
+        return S.gren.length - n;
+      },
+      melee: function (i) {
+        melee(S.ps[i]);
+      },
+    };
+  },
+  _koth: function () {
+    var H = S.hill;
+    return H
+      ? {
+          x: H.x,
+          y: H.y,
+          r: H.r,
+          t: H.t,
+          hold: H.hold,
+          i: H.i,
+          open: H.open,
+          score: S.score.slice ? S.score.slice() : S.score,
+          move: function () {
+            kothMove(0);
+          },
+          mk: OBJMK.slice(),
+        }
+      : null;
+  },
+  _lean: function (i) {
+    var p = S.ps[i];
+    return [p.lnF || 0, p.lnS || 0];
+  },
+  _sep: function () {
+    var L = S.ps.filter(function (p) {
+        return !p.dead;
+      }),
+      m = 1e9,
+      ov = 0;
+    for (var i = 0; i < L.length; i++)
+      for (var j = i + 1; j < L.length; j++) {
+        var d = Math.hypot(L[i].x - L[j].x, L[i].y - L[j].y),
+          rr = colR(L[i]) + colR(L[j]);
+        m = Math.min(m, d / rr);
+        if (d < rr * 0.6) ov++;
+      }
+    return { minRatio: m, deep: ov, n: L.length, checks: SEPN };
+  },
+  _lift: function () {
+    return LIFTL;
+  },
+  _pd: function (p, x, y) {
+    var tc = Math.floor(y / C) * GW + Math.floor(x / C),
+      d = bfs(tc),
+      c = Math.floor(p.y / C) * GW + Math.floor(p.x / C);
+    return { d: d[c], dir: pathDir(p, x, y), cab: cabs(c) };
+  },
+  _dmgl: function (c) {
+    var r = DMGL.slice();
+    if (c) DMGL.length = 0;
+    return r;
+  },
+  _boom: function (g) {
+    boom(g);
+  },
+  _blasts: function () {
+    return {
+      frag: [H3.frag.r, H3.frag.dmg, H3.frag.dmin],
+      plas: [H3.frag.r, H3.plas.dmg, H3.plas.dmin],
+      rocket: [WPN.rocket.ex, WPN.rocket.exd, WPN.rocket.exm],
+      fuel: [WPN.fuel.ex, WPN.fuel.exd, WPN.fuel.exm],
+      core: [PJ.blast.core, 130, 10],
+      needle: [PJ.blast.needle, 40, 40],
+      kz: [PJ.blast.kz, 140, 10],
+    };
+  },
+  _vcap: function (on) {
+    var r = VCAP;
+    VCAP = on ? [] : null;
+    return r;
+  },
+  _impK: function () {
+    return impK();
+  },
+  _slot: function (id) {
+    return slot(id);
+  },
+  _mag0: function () {
+    return MAGL0;
+  },
+  _trk: function (R) {
+    return { TRK: TRK, ASC: ASC, b: S.ps[1] ? trkBlip(S.ps[0], S.ps[1], R) : null };
+  },
+  _aimq: function () {
+    var me = S.ps[0],
+      t = aimT(me, 0, -2);
+    return { red: !!redT(me), assist: !!t, fric: !!t, home: !!homeT(me, 0.3), los: S.ps[1] ? losAim(me, S.ps[1]) : null };
+  },
+  _conn: function () {
+    var sp = arena.spawns,
+      d = bfs(Math.floor(sp[0].y / C) * GW + Math.floor(sp[0].x / C)),
+      fr = 0,
+      re = 0;
+    for (var i = 0; i < GW * GH; i++) {
+      if (!solidC(i % GW, (i / GW) | 0)) {
+        fr++;
+        if (d[i] >= 0) re++;
+      }
+    }
+    var bad = sp.filter(function (q) {
+      return d[Math.floor(q.y / C) * GW + Math.floor(q.x / C)] < 0;
+    }).length;
+    return { free: fr, reach: re, badSpawns: bad, n: sp.length };
+  },
+  _pj: function () {
+    return {
+      K: PJK,
+      orig: PJ0,
+      cur: PJ,
+      WPN: WPN,
+      H3: H3,
+      live: { frag: H3.frag.r, rocket: WPN.rocket.ex, fuel: WPN.fuel.ex },
+      vis: function (b) {
+        return pjVis(b);
+      },
+    };
+  },
+  _fire: function () {
+    var me = S.ps[0];
+    shoot(me, 0, WD(me));
+    var b = S.bul[S.bul.length - 1];
+    return {
+      bx: b.x,
+      by: b.y,
+      bz: b.z,
+      vx: b.vx,
+      vy: b.vy,
+      vz: b.vz,
+      px: me.x,
+      py: me.y,
+      ez: eyeZ(me),
+      a: me.a,
+      pt: me.pt,
+    };
+  },
+  _arena: function () {
+    return {
+      arch: arena.arch,
+      sym: !!arena.sym,
+      flags: (arena.flags || []).length,
+      ff: !!arena.ffBase,
+      lanes: (arena.lanes || []).length,
+      sp: (arena.spawns || []).length,
+      pads: (arena.pads || []).length,
+    };
+  },
+  _bj: function (r) {
+    if (r) {
+      BJ.j = 0;
+      BJ.fail = 0;
+      BJ.stuck = 0;
+      BJ.det = 0;
+    }
+    return BJ;
+  },
+  _stab: function () {
+    return STAB;
+  },
+  _os: function () {
+    var o = S.os;
+    return {
+      cand: !!osPick(S.pads, arena.spawns),
+      os: o && { x: o.x, y: o.y },
+      e: o && osEval(o.x, o.y, S.pads, arena.spawns),
+      pw: S.pads.some(function (q) {
+        return q.pw;
+      }),
+      fc: S.fc.length,
+      b: S.props.filter(function (q) {
+        return q.t === "b";
+      }).length,
+      diag: Math.hypot(AW, AH),
+    };
+  },
+  _fx: {
+    novm: function (v) {
+      NOVM = v;
+    },
+    cell: function (c) {
+      return [grid[c], CH[c]];
+    },
+  },
+  _dmg: function (i, d, j) {
+    var P = S.ps[i];
+    P.inv = 0;
+    damage(P, d, S.ps[j], "Assault Rifle");
+  },
+  _x: function () {
+    return {
+      los: los,
+      CH: function () {
+        return CH;
+      },
+      sees: sees,
+      DIFF: DIFF,
+      ground: ground,
+      boom: boom,
+      fcHit: fcHit,
+      tlay: tlay,
+      ovMap: ovMap,
+      freeAt: freeAt,
+      humans: humans,
+      resize: resize,
+      act: act,
+      setQL: function (q) {
+        QL = q;
+        resize();
+      },
+      freeze: function (v) {
+        FRZ = v;
+      },
+      hudall: function (v) {
+        HUDALL = v;
+      },
+      hudbox: function () {
+        return HUDBOX;
+      },
+      split: function () {
+        return SPLIT;
+      },
+      local: function () {
+        return LOCAL;
+      },
+      rum: function () {
+        return rumLog;
+      },
+      grid: function () {
+        return grid;
+      },
+      GW: GW,
+      C: C,
+      AW: AW,
+      AH: AH,
+      state: function () {
+        return state;
+      },
+      set: function (k, v) {
+        if (k === "NLP") NLP = v;
+      },
+    };
+  },
+  _state: function () {
+    return (
+      S && {
+        vis: !S.ps[0].dead && !!aimT(S.ps[0], 1100, 0.35),
+        ql: QL,
+        ft: Math.round(ftE),
+        state: state,
+        score: S.score.slice(),
+        kills: S.ps.map(function (p) {
+          return p.kills;
+        }),
+        parts: S.part.length,
+        bul: S.bul.length,
+      }
+    );
+  } /*END*/,
 };
+
 })();
 </script></body></html>
