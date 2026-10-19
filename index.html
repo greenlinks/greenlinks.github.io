@@ -94,7 +94,6 @@
   @media (min-width: 1300px) { .grid { grid-template-columns: repeat(4, minmax(0, 800px)); } }
   .card { position: relative; transition: opacity .3s var(--ease), filter .3s var(--ease); }
   .card[hidden] { display: none; }
-  .grid.has-sel .card:not(.sel) { opacity: .5; filter: saturate(.5); }
   .empty { color: var(--mut); font: 500 12px var(--mono); letter-spacing: .15em; text-transform: uppercase; }
 
   .tile {
@@ -124,7 +123,6 @@
 
   .acts {
     position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; padding: 10px;
-    background: linear-gradient(0deg, rgba(0, 0, 0, .75), transparent);
     opacity: 0; transform: translateY(6px); pointer-events: none;
     transition: opacity .25s var(--ease), transform .25s var(--ease);
   }
