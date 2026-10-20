@@ -1,0 +1,31 @@
+{
+ "name": "NANO",
+ "short_name": "NANO",
+ "description": "A tiny Halo-style FPS.",
+ "start_url": "/#nano",
+ "scope": "/",
+ "display": "fullscreen",
+ "orientation": "any",
+ "background_color": "#050605",
+ "theme_color": "#050605",
+ "icons": [
+  {
+   "src": "/icons/nano-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "/icons/nano-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any"
+  },
+  {
+   "src": "/icons/nano-maskable-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "maskable"
+  }
+ ]
+}
