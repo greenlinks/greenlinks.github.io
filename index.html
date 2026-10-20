@@ -14484,7 +14484,8 @@ if (q.parentNode) q.parentNode.removeChild(q);
 HOMEADD = [];
 }
 function a2hsOn() {
-return (IOS || BIP) && !HOMEAPP && !SET.a2hs;
+var phone = W.matchMedia && matchMedia("(hover: none) and (pointer: coarse)").matches; /* desktop browsers offer install too: not asked there */
+return (IOS || (BIP && phone)) && !HOMEAPP && !SET.a2hs;
 }
 function a2hsHTML() {
 if (!a2hsOn()) return "";
