@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="color-scheme" content="dark"><meta name="description" content="Halo Infinite Forge maps I built and helped build."><meta name="theme-color" content="#9be22d"><meta property="og:type" content="website"><meta property="og:site_name" content="Green&#39;s Forge Maps"><meta property="og:title" content="Green&#39;s Forge Maps"><meta property="og:description" content="Halo Infinite Forge maps I built and helped build."><meta property="og:url" content="https://greenlinks.github.io/"><meta property="og:image" content="https://greenlinks.github.io/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Green&#39;s Forge Maps: Halo Infinite Forge maps"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Green&#39;s Forge Maps"><meta name="twitter:description" content="Halo Infinite Forge maps I built and helped build."><meta name="twitter:image" content="https://greenlinks.github.io/og.jpg"><link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%20-8%2024%2030%22%3E%3Cg%20fill%3D%22%239be22d%22%3E%3Crect%20x%3D%2211.35%22%20y%3D%22-7%22%20width%3D%221.3%22%20height%3D%2210%22/%3E%3Cpath%20d%3D%22M12.6%20-7C15%20-7.8%2016.8%20-5.6%2020%20-6.4L20%20-2.4C16.8%20-1.6%2015%20-3.8%2012.6%20-3Z%22/%3E%3Cpath%20d%3D%22M2%2022V9h3v2h2V9h3v2h4V9h3v2h2V9h3v13h-8v-5a2%202%200%200%200-4%200v5zM9%207V3h2v1.5h2V3h2v4z%22/%3E%3C/g%3E%3C/svg%3E"><title>Green's Forge Maps</title><style>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="color-scheme" content="dark"><meta name="description" content="Halo Infinite Forge maps I built and helped build."><meta name="theme-color" content="#9be22d"><meta property="og:type" content="website"><meta property="og:title" content="Green&#39;s Forge Maps"><meta property="og:description" content="Halo Infinite Forge maps I built and helped build."><meta property="og:url" content="https://greenlinks.github.io/"><meta property="og:image" content="https://greenlinks.github.io/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Green&#39;s Forge Maps: Halo Infinite Forge maps"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Green&#39;s Forge Maps"><meta name="twitter:description" content="Halo Infinite Forge maps I built and helped build."><meta name="twitter:image" content="https://greenlinks.github.io/og.jpg"><link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%20-8%2024%2030%22%3E%3Cg%20fill%3D%22%239be22d%22%3E%3Crect%20x%3D%2211.35%22%20y%3D%22-7%22%20width%3D%221.3%22%20height%3D%2210%22/%3E%3Cpath%20d%3D%22M12.6%20-7C15%20-7.8%2016.8%20-5.6%2020%20-6.4L20%20-2.4C16.8%20-1.6%2015%20-3.8%2012.6%20-3Z%22/%3E%3Cpath%20d%3D%22M2%2022V9h3v2h2V9h3v2h4V9h3v2h2V9h3v13h-8v-5a2%202%200%200%200-4%200v5zM9%207V3h2v1.5h2V3h2v4z%22/%3E%3C/g%3E%3C/svg%3E"><title>Green's Forge Maps</title><style>
   :root {
     --bg: #0a0a0a;
     --fg: #ededed;
@@ -188,9 +188,11 @@
   }
   .toast.on { opacity: 1; transform: translate(-50%, 0); }
 
+  @media (max-width: 340px) { .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 600px) {
-    .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-bottom: 4px; }
-    .chip { flex: none; }
+    .chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }   /* all six visible: two rows of three */
+    .chip { padding: 10px 4px; font-size: 10px; letter-spacing: .08em; text-align: center; white-space: nowrap; }
+    .chip .n { margin-left: 4px; }
     .links a { padding: 6px 9px; }
     .roles { display: none; }
     .btn { padding: 8px 9px; font-size: 9.5px; letter-spacing: .1em; }
@@ -4039,30 +4041,42 @@ return q && q.connected ? q : null;
 }
 var PP = {},
 GYR = { a: 0, p: 0, t: 0 };
-var GUP = null;
-addEventListener("deviceorientation", function (e) {
-if (e.beta == null || e.gamma == null) return;
-var b = (e.beta * Math.PI) / 180,
-g = (e.gamma * Math.PI) / 180;
-GUP = [-Math.cos(b) * Math.sin(g), Math.sin(b), Math.cos(b) * Math.cos(g)];
-});
-addEventListener("devicemotion", function (e) {
-var r = e.rotationRate,
-now = performance.now(),
-dt = Math.min(0.1, (now - (GYR.t || now)) / 1000);
-GYR.t = now;
-if (!r || !SET.gyro || !touch || state !== "play") return;
-var o = (screen.orientation && screen.orientation.angle) || W.orientation || 0,
-wx = r.beta || 0 /* device x */,
-wy = r.gamma || 0 /* device y */,
-wz = r.alpha || 0 /* device z, out of the screen */;
+var GR0 = null;
+function gyroR(a, b, g) {
+var d = Math.PI / 180,
+cA = Math.cos(a * d), sA = Math.sin(a * d), cB = Math.cos(b * d), sB = Math.sin(b * d), cG = Math.cos(g * d), sG = Math.sin(g * d);
+return [cA * cG - sA * sB * sG, -cB * sA, cG * sA * sB + cA * sG, cG * sA + cA * sB * sG, cA * cB, sA * sG - cA * cG * sB, -cB * sG, sB, cB * cG];
+}
+function gyroStep(R, t) {
+var P = GR0;
+GR0 = { R: R, t: t };
+if (!P || !SET.gyro || !touch || state !== "play") return;
+var dt = (t - P.t) / 1000;
+if (dt <= 0 || dt > 0.25) return;
+var A = R,
+B = P.R,
+D = function (r, c) {
+return A[r * 3] * B[c * 3] + A[r * 3 + 1] * B[c * 3 + 1] + A[r * 3 + 2] * B[c * 3 + 2]; /* (R * Rprev^T)[r][c] */
+},
+wx = (D(2, 1) - D(1, 2)) / 2,
+wy = (D(0, 2) - D(2, 0)) / 2,
+wz = (D(1, 0) - D(0, 1)) / 2,
+k = 180 / Math.PI;
+if (Math.abs(wx) + Math.abs(wy) + Math.abs(wz) > 0.6) return; /* a jump, not a turn */
+var dx = A[0] * wx + A[3] * wy + A[6] * wz,
+dy = A[1] * wx + A[4] * wy + A[7] * wz,
+o = (screen.orientation && screen.orientation.angle) || W.orientation || 0;
 o = ((o % 360) + 360) % 360;
-var pitch = o === 90 ? -wy : o === 270 ? wy : o === 180 ? -wx : wx,
-yaw = GUP ? -(wx * GUP[0] + wy * GUP[1] + wz * GUP[2]) : -(o === 90 ? wx : o === 270 ? -wx : o === 180 ? -wy : wy);
-if (Math.abs(yaw) < 1.2) yaw = 0;
-if (Math.abs(pitch) < 1.2) pitch = 0;
-GYR.a += yaw * dt;
-GYR.p += pitch * dt;
+var yaw = -wz * k,
+pitch = (o === 90 ? -dy : o === 270 ? dy : o === 180 ? -dx : dx) * k;
+if (Math.abs(yaw) < 1.2 * dt) yaw = 0;
+if (Math.abs(pitch) < 1.2 * dt) pitch = 0;
+GYR.a += yaw;
+GYR.p += pitch;
+}
+addEventListener("deviceorientation", function (e) {
+if (e.alpha == null || e.beta == null || e.gamma == null) return;
+gyroStep(gyroR(e.alpha, e.beta, e.gamma), performance.now());
 });
 function gyroAsk() {
 if (!SET.gyro || GYR.ok) return;
@@ -7569,20 +7583,60 @@ return o;
 }
 function scoreboard(g, vw, vh, F) {
 var rows = sbRows(),
-w = 520,
+w = Math.min(520, vw - 24),
 rh = 26,
 h = rows.length * rh + 44,
 om = ovMap(),
-mw = om ? Math.min(340, vw - w - 60) : 0,
+side = om && vw - w - 60 >= 200 /* room for the map beside the table, else it goes under it */,
+mw = om ? (side ? Math.min(340, vw - w - 60) : Math.min(w, 340)) : 0,
 mh = om ? (mw * om.height) / om.width : 0,
-x = (vw - w - (om ? mw + 14 : 0)) / 2,
-y = vh * 0.22;
+x = side ? (vw - w - mw - 14) / 2 : (vw - w) / 2,
+y = side ? vh * 0.22 : Math.max(16, (vh - h - (om ? mh + 34 : 0)) / 2),
+yb = vh;
+if (touch && SPLIT < 2) {
+var u_ = VW / vw,
+tb = tlay().b.filter(function (b) {
+return b.y > VH * 0.45;
+});
+if (VH > VW) {
+yb = Math.min.apply(0, tb.map(function (b) {
+return (b.y - b.r) / u_;
+}).concat([vh])) - 8;
+y = (safe().t + 66) / u_;
+} else {
+var xr = Math.min.apply(0, tb.filter(function (b) {
+return b.x > VW / 2;
+}).map(function (b) {
+return (b.x - b.r) / u_;
+}).concat([vw])) - 12,
+xl = Math.max.apply(0, tlay().b.filter(function (b) {
+return b.x < VW / 2 && b.k !== "p" && b.k !== "s";
+}).map(function (b) {
+return (b.x + b.r) / u_;
+}).concat([(safe().l + 16) / u_])) + 10,
+av = xr - xl;
+side = !!om;
+w = Math.min(520, om ? av * 0.6 : av);
+mw = om ? Math.min(340, av - w - 14) : 0;
+mh = om ? (mw * om.height) / om.width : 0;
+x = xl + (av - w - (om ? mw + 14 : 0)) / 2;
+y = Math.max((safe().t + 64) / u_, vh * 0.2);
+}
+}
+if (!side && om && y + h + 14 + mh + 20 > yb) {
+mh = Math.max(0, yb - y - h - 34);
+mw = (mh * om.width) / om.height;
+}
+g.fillStyle = "rgba(2,8,14,.55)"; /* the game behind dims so the table and map read cleanly */
+g.fillRect(0, 0, vw, vh);
 if (om && mw > 120) {
-g.drawImage(om, x + w + 14, y, mw, mh);
+var mx = side ? x + w + 14 : (vw - mw) / 2,
+my = side ? y : y + h + 14;
+g.drawImage(om, mx, my, mw, mh);
 g.fillStyle = "#7fd8ff";
 g.font = "700 10px" + F;
 g.textAlign = "left";
-g.fillText("OVERVIEW · " + W.GLData[mapI].nameText.toUpperCase(), x + w + 14, y + mh + 12);
+g.fillText("OVERVIEW · " + W.GLData[mapI].nameText.toUpperCase(), mx, my + mh + 12);
 }
 g.fillStyle = "rgba(4,12,20,.82)";
 g.fillRect(x, y, w, h);
@@ -7599,10 +7653,10 @@ x + 14,
 y + 16,
 );
 var cols = [
-["SCORE", 300],
-["K", 370],
-["D", 420],
-["A", 470],
+["SCORE", w * 0.58],
+["K", w * 0.71],
+["D", w * 0.81],
+["A", w * 0.91],
 ];
 cols.forEach(function (c) {
 g.textAlign = "right";
@@ -7645,7 +7699,8 @@ if (mode === "ff" && FF) ffSkPanel(g, x, y + h + 10, w, vh, F, SBME.id);
 }
 function hud(g, me) {
 var PT = !!touch && SPLIT < 2 && VH > VW,
-SY = PT ? 50 : 0,
+SA0 = touch ? safe() : null,
+SY = 0,
 F_ = me.fx,
 U =
 (PT
@@ -7662,6 +7717,7 @@ vh = VH / U,
 HC = "#7fd8ff",
 F = " ui-monospace,SFMono-Regular,Menlo,Consolas,monospace",
 i;
+if (PT) SY = Math.max(SA0.t / U + 70, (SA0.t + 62) / U - 14);
 g.setTransform(DPR * U, 0, 0, DPR * U, OX * DPR, OY * DPR);
 g.textBaseline = "middle";
 g.lineCap = "butt";
@@ -7681,7 +7737,12 @@ km: cy + 110,
 pick: cy + 134,
 med: cy + 186,
 medN: cy + 222,
-},
+};
+if (PT) {
+LN.ann = Math.max(LN.ann, SY + 262);
+LN.over = Math.max(LN.over, LN.ann + 44);
+}
+var
 ctext = function (t, y, font, col, lane) {
 g.font = font;
 g.fillStyle = col;
@@ -7689,7 +7750,16 @@ g.textAlign = "center";
 g.fillText(t, vw / 2, y);
 };
 var cxs = vw / 2,
-Rr = 520,
+Rr = 520;
+if (touch && !PT && SPLIT < 2) {
+var lx_ = (SA0.l + 112) / U + 8,
+rx_ = vw - 392 - SA0.r / U - 8,
+fw_ = rx_ - lx_;
+if (fw_ < 300) Rr = Math.max(300, (520 * fw_) / 300); /* narrow: a smaller arc rather than an overlap */
+var hw_ = Rr * Math.sin(0.28) + 6;
+cxs = clamp(vw / 2, lx_ + hw_, rx_ - hw_);
+}
+var
 cy0 = 34 + SY + Rr,
 A0 = -Math.PI / 2 - 0.28,
 A1 = -Math.PI / 2 + 0.28,
@@ -7771,16 +7841,16 @@ g.fillText("SHIELDS", cxs, 64 + SY);
 var W_ = WD(me),
 s = cw(me),
 px = vw - 222 - (touch ? safe().r / U : 0),
-py = (PT ? 150 : 14) + (touch ? safe().t / U : 0); /* portrait: clear of the shield arc's dipping ends */
+py = PT ? SY + 100 : 14 + (touch ? safe().t / U : 0); /* portrait: under the shield bar */
 WCARD = touch ? { x: OX + (px + 40) * U, y: OY + py * U, w: 180 * U, h: 112 * U } : null;
 if (touch)
 TKO.push(
 { n: "weapon", x0: WCARD.x, y0: WCARD.y, x1: WCARD.x + WCARD.w, y1: WCARD.y + WCARD.h },
 {
 n: "shield",
-x0: OX + (vw / 2 - 160) * U,
+x0: OX + (cxs - 160) * U,
 y0: OY + (14 + SY) * U,
-x1: OX + (vw / 2 + 160) * U,
+x1: OX + (cxs + 160) * U,
 y1: OY + (72 + SY) * U,
 },
 );
@@ -7852,7 +7922,7 @@ ctext(s.mag + s.res > 0 ? "RELOAD" : "NO AMMO", LN.prompt, PF, "#fc6", "prompt")
 var sa_ = touch ? safe() : null,
 R = touch ? 50 : 74,
 rx = touch ? (sa_.l + 12) / U + R : 22 + R,
-ry = touch ? (PT ? sa_.t / U + 150 : (sa_.t + 58) / U) + R : vh - 22 - R;
+ry = touch ? (PT ? SY + 100 : (sa_.t + 58) / U) + R : vh - 22 - R;
 if (touch) {
 TKO = [
 {
