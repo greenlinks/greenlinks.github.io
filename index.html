@@ -10712,8 +10712,23 @@ return tk.map(function (k) {
 return ffTeam(k, r2);
 });
 }
+function freeNear(x, y, R) {
+var cx_ = clamp(Math.floor(x / C), 1, GW - 2),
+cy_ = clamp(Math.floor(y / C), 1, GH - 2);
+for (var r = 0; r <= R; r++)
+for (var dy = -r; dy <= r; dy++)
+for (var dx = -r; dx <= r; dx++) {
+if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+var a = cx_ + dx,
+b = cy_ + dy;
+if (a >= 1 && b >= 1 && a < GW - 1 && b < GH - 1 && !grid[b * GW + a]) return { x: (a + 0.5) * C, y: (b + 0.5) * C };
+}
+return null;
+}
 function phNew(teams, delay, bonus) {
-var dp = ffPt(),
+var dp = ffPt();
+dp = freeNear(dp.x, dp.y, 6) || freeAt(dp.x, dp.y); /* hover over open ground: the lift has somewhere to land */
+var
 ea = Math.random() * TAU,
 far = Math.hypot(AW, AH) * 0.62,
 cx_ = AW / 2,
@@ -10813,11 +10828,10 @@ ld = null,
 pr = null;
 tm.forEach(function (b, i) {
 var o = { erk: b.erk, grk: b.grk, jrk: b.jrk },
-lift = b.ty === "h" || i === 0,
-sd = i % 2 ? 1 : -1,
-px = s.hx + (lift ? 0 : -Math.sin(s.a) * sd * 60 * MSF),
-py = s.hy + (lift ? 0 : Math.cos(s.a) * sd * 60 * MSF),
-f = freeAt(px + (Math.random() - 0.5) * 30 * MSF, py + (Math.random() - 0.5) * 30 * MSF);
+ra = i * 2.4 + Math.random() * 0.6,
+rr = i ? 16 * MSF : 0,
+f = freeNear(s.hx + Math.cos(ra) * rr, s.hy + Math.sin(ra) * rr, 2) || { x: s.hx, y: s.hy };
+if (i) f = { x: f.x + Math.cos(ra) * C * 0.28, y: f.y + Math.sin(ra) * C * 0.28 }; /* spread inside the lift */
 o.shp = s;
 if (b.lead && (b.ty === "e" || b.ty === "es")) ld = o.ldr = o;
 if (b.ty === "h") {
@@ -10827,7 +10841,7 @@ FF.hpr.pr = o;
 FF.hpr = null;
 } else FF.hpr = o;
 }
-FF.q.push({ t: i * 0.3, ty: b.ty, x: f.x, y: f.y, o: o });
+FF.q.push({ t: i * 0.45, ty: b.ty, x: f.x, y: f.y, o: o });
 });
 FF.q.slice(-tm.length).forEach(function (q) {
 if (q.ty === "g" && ld) {
@@ -10835,8 +10849,8 @@ q.o.ldo = ld;
 q.o.kz = (DIFFK.indexOf(ffd()) >= 2 || FF.sk.ca) && Math.random() < 0.22;
 }
 });
-s.t = 1.8;
-} /* side doors + ventral lift, packs of ~4; hunters lift only */
+s.t = 1.2 + tm.length * 0.45;
+} /* ventral lift only, packs of ~4 */
 else if (!s.bonus) {
 s.st = "out";
 s.t = 1;
@@ -10921,7 +10935,8 @@ B(-0.6, 0.5, -2.1, 1.7, 0.55, 0.8, H2);
 B(0.3, -0.35, 0, 1.2, 0.7, 0.4, [0.18, 0.12, 0.26]);
 if (s.st === "hover") {
 var gz = ground(s.hx, s.hy);
-seg([o[0], gz, o[2]], [o[0], o[1] - 0.4, o[2]], 0.9, G, 0.12);
+seg([o[0], gz, o[2]], [o[0], o[1] - 0.4, o[2]], 0.9, G, 0.16);
+disc(o[0], gz + 0.04, o[2], 1.6, [0.7, 0.45, 1], 0.35); /* where the lift meets the ground */
 B(0, 0.4, 1.55, 0.9, 0.05, 0.9, [0.9, 0.7, 1]);
 B(0, 0.4, -1.55, 0.9, 0.05, 0.9, [0.9, 0.7, 1]);
 }
@@ -11181,15 +11196,7 @@ tz = liftTop(p),
 Lb = Math.max(PH_BEAM, tz - gz),
 bz = tz - Lb;
 LIFTL[p.id] = { top: tz, gz: gz, bottom: bz, len: Lb };
-seg([o[0], bz + Lb * 0.3, o[2]], [o[0], tz, o[2]], 0.5, [0.55, 0.35, 1], 0.18);
-for (var fi = 0; fi < 5; fi++)
-seg(
-[o[0], bz + (Lb * 0.3 * fi) / 5, o[2]],
-[o[0], bz + (Lb * 0.3 * (fi + 1)) / 5, o[2]],
-0.5,
-[0.55, 0.35, 1],
-(0.18 * (fi + 1)) / 6,
-);
+seg([o[0], gz, o[2]], [o[0], tz, o[2]], 0.5, [0.55, 0.35, 1], 0.18); /* hull to the ground, no fade */
 disc(o[0], gz + 0.05, o[2], 1.2, [0.7, 0.45, 1], 0.4);
 }
 if (p.js > 0) {
@@ -14086,7 +14093,7 @@ cv.setPointerCapture(e.pointerId);
 } catch (x) {}
 FG.pad = 0;
 var q = pos(e),
-pp = (P[e.pointerId] = { x: q[0], y: q[1], x0: q[0], y0: q[1], m: 0, tch: e.pointerType !== "mouse" }),
+pp = (P[e.pointerId] = { x: q[0], y: q[1], x0: q[0], y0: q[1], m: 0, tch: e.pointerType !== "mouse", t0: performance.now() }),
 n = Object.keys(P).length;
 if (n === 2) {
 for (var k in P) P[k].mode = "g";
@@ -14105,9 +14112,14 @@ pp.o = o;
 FG.sel = { o: o };
 showUI(true);
 } else if (FG.tool !== "sel" && !fgIsObj(FG.tool)) {
+if (pp.tch) {
+pp.mode = "pend";
+pp.t = t;
+} else {
 pp.mode = "paint";
 pp.lt = t;
 fgUse(t);
+}
 } else {
 pp.mode = "tap";
 pp.t = t;
@@ -14131,7 +14143,12 @@ dy = q[1] - pp.y,
 K = FG.cam;
 pp.x = q[0];
 pp.y = q[1];
-if (Math.hypot(pp.x - pp.x0, pp.y - pp.y0) > 8) pp.m = 1;
+if (Math.hypot(pp.x - pp.x0, pp.y - pp.y0) > (pp.tch ? 14 : 8)) pp.m = 1;
+if (pp.mode === "pend" && pp.m && Object.keys(P).length === 1) {
+pp.mode = "paint"; /* one finger dragging: a paint stroke from where it started */
+pp.lt = pp.t;
+fgUse(pp.t);
+}
 if (pp.mode === "g") {
 if (Object.keys(P).length < 2 || !g0) return;
 var g1 = G(),
@@ -14172,7 +14189,8 @@ if (!pp) return;
 delete P[e.pointerId];
 if (Object.keys(P).length < 2) g0 = null;
 if (!on()) return;
-if (pp.mode === "tap" && !pp.m) fgUse(pp.t);
+var quick = !pp.tch || performance.now() - pp.t0 < 450; /* a held or wandering finger is not a tap */
+if ((pp.mode === "tap" || pp.mode === "pend") && !pp.m && quick) fgUse(pp.t);
 showUI(true);
 };
 cv.addEventListener("pointerup", up);
