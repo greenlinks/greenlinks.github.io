@@ -1151,35 +1151,39 @@ function genArena(seed) {
 GADJ = null;
 return bpArena((W.GLData[mapI] || {}).bp || BP[mapI % BP.length], seed); /* forge maps carry their own blueprint */
 }
+var GPEN = 6;
 function bfs(start) {
 var d = new Int16Array(GW * GH).fill(-1),
-q = new Int16Array(GW * GH),
-h = 0,
-t = 0;
-d[start] = 0;
-q[t++] = start;
-while (h < t) {
-var c = q[h++],
-x = c % GW,
-y = (c / GW) | 0;
-var ge = GADJ && GADJ[c];
-if (ge)
-for (var gi = 0; gi < ge.length; gi++)
-if (d[ge[gi]] < 0) {
-d[ge[gi]] = d[c] + 1;
-q[t++] = ge[gi];
+B = [[start]],
+pad = {},
+put = function (n, v) {
+if (d[n] < 0 || v < d[n]) {
+d[n] = v;
+(B[v] = B[v] || []).push(n);
 }
-for (var k = 0; k < 4; k++) {
-var nx = x + (k === 0 ? 1 : k === 1 ? -1 : 0),
-ny = y + (k === 2 ? 1 : k === 3 ? -1 : 0);
+};
+if (GADJ) for (var t_ in GADJ) GADJ[t_].forEach(function (f) { pad[f] = 1; });
+d[start] = 0;
+for (var k = 0; k < B.length; k++) {
+var bk = B[k];
+if (!bk) continue;
+for (var i = 0; i < bk.length; i++) {
+var c = bk[i];
+if (d[c] !== k) continue; /* stale entry: reached cheaper since */
+var x = c % GW,
+y = (c / GW) | 0,
+ge = GADJ && GADJ[c];
+if (ge) for (var gi = 0; gi < ge.length; gi++) put(ge[gi], k + GPEN);
+for (var q = 0; q < 4; q++) {
+var nx = x + (q === 0 ? 1 : q === 1 ? -1 : 0),
+ny = y + (q === 2 ? 1 : q === 3 ? -1 : 0);
 if (!solidC(nx, ny)) {
 var n = ny * GW + nx;
-if (d[n] < 0 && cabs(c) - cabs(n) <= RCH1 - 0.15) {
-d[n] = d[c] + 1;
-q[t++] = n;
+if (!pad[n] && cabs(c) - cabs(n) <= RCH1 - 0.15) put(n, k + 1);
 }
 }
 }
+B[k] = null;
 }
 return d;
 }
@@ -1224,8 +1228,10 @@ if (blockZ(ax + (dx * i) / n, ay + (dy * i) / n, za + ((zb - za) * i) / n)) retu
 return true;
 }
 function losAim(p, o) {
+return losAt(p, o, o.z + (o.cov && CT[o.ty] ? CT[o.ty].H * 0.55 : 0.9 * ASC)) || losAt(p, o, o.z + (o.cov && CT[o.ty] ? CT[o.ty].H * 0.85 : 1.59 * ASC * (o.chs || 1)));
+}
+function losAt(p, o, tz) {
 var ez = eyeZ(p),
-tz = o.z + (o.cov && CT[o.ty] ? CT[o.ty].H * 0.55 : 0.9 * ASC),
 dx = o.x - p.x,
 dy = o.y - p.y,
 n = Math.ceil(Math.hypot(dx, dy) / (C * 0.25));
@@ -1302,6 +1308,15 @@ h: p.t === "b" ? 1.1 * ASC : 0.75 * ASC, /* barrel 0.645 Spartan heights tall, a
 };
 });
 }
+function bodyTo(o, nx, ny) {
+var r = 11 * ASC,
+z = o.z;
+if (!blk(nx, ny, z, r, 0.32)) {
+o.x = nx;
+o.y = ny;
+} else if (!blk(nx, o.y, z, r, 0.32)) o.x = nx;
+else if (!blk(o.x, ny, z, r, 0.32)) o.y = ny;
+}
 function solidPush(o, x, y, r) {
 var dx = o.x - x,
 dy = o.y - y,
@@ -1313,8 +1328,7 @@ dx = 1;
 dy = 0;
 d = 1;
 }
-o.x = x + (dx / d) * m;
-o.y = y + (dy / d) * m;
+bodyTo(o, x + (dx / d) * m, y + (dy / d) * m);
 var vn = (o.vx * dx + o.vy * dy) / d;
 if (vn < 0) {
 o.vx -= (vn * dx) / d;
@@ -1392,7 +1406,7 @@ q.vy -= dy * im;
 }
 }
 S.ps.forEach(function (o) {
-if (o.dead || o.z > p.h + 0.1) return;
+if (o.dead || o.z > p.z + p.h + 0.1) return;
 var dx = p.x - o.x,
 dy = p.y - o.y,
 d = Math.hypot(dx, dy),
@@ -1401,8 +1415,7 @@ if (d < m && d > 0) {
 var k = (m - d) / d;
 p.x += dx * k * 0.6;
 p.y += dy * k * 0.6;
-o.x -= dx * k * 0.4;
-o.y -= dy * k * 0.4;
+bodyTo(o, o.x - dx * k * 0.4, o.y - dy * k * 0.4);
 p.vx += (dx / d) * 40;
 p.vy += (dy / d) * 40;
 p.va += (Math.random() - 0.5) * 2;
@@ -1570,115 +1583,250 @@ tone(t + i * 0.12, 440 * Math.pow(2, s / 12), 0.3, "square", 0.15, sfxG);
 var M2F = function (m) {
 return 440 * Math.pow(2, (m - 69) / 12);
 };
-var LEAD = [
+var SC = {
+m: [0, 2, 3, 5, 7, 8, 10],
+d: [0, 2, 3, 5, 7, 9, 10],
+p: [0, 1, 3, 5, 7, 8, 10],
+h: [0, 2, 3, 5, 7, 8, 11],
+},
+SECN = { I: 4, A: 8, B: 8, C: 8, D: 4, O: 4 },
+SONGS = [
+{
+n: "Spire", r: 45, s: "m", bpm: 138, w: "square", dr: 0, bs: 0, f: "IABABCBDBO",
+P: { A: [0, 3, 5, 4], B: [0, 5, 6, 4], C: [3, 5, 6, 6] },
+L: [
 69, 0, 0, 76, 0, 0, 74, 72, 71, 0, 72, 0, 69, 0, 0, 0, 69, 0, 0, 72, 0, 0, 77, 0, 76, 0, 74, 0, 72, 0, 0, 0,
-74, 0, 0, 71, 0, 0, 67, 0, 71, 0, 74, 0, 79, 0, 77, 76, 76, 0, 0, 0, 74, 0, 72, 71, 68, 0, 0, 0, 71, 0, 0,
-0,
-];
-var BASS = [45, 41, 43, 40],
-BPM = 138;
-var PVP = [
-{ L: LEAD, B: BASS, bpm: 138, arp: [0, 3, 7, 12], w: "square" },
+74, 0, 0, 71, 0, 0, 67, 0, 71, 0, 74, 0, 79, 0, 77, 76, 76, 0, 0, 0, 74, 0, 72, 71, 68, 0, 0, 0, 71, 0, 0, 0,
+],
+},
 {
+n: "Relay", r: 38, s: "m", bpm: 144, w: "sawtooth", dr: 0, bs: 1, f: "IAABCBDBO",
+P: { A: [0, 6, 5, 6], B: [0, 5, 6, 4], C: [3, 5, 4, 4] },
 L: [
-74, 0, 74, 77, 0, 74, 72, 0, 74, 0, 0, 81, 0, 79, 77, 0, 72, 0, 72, 76, 0, 72, 70, 0, 69, 0, 72, 0,
-74, 0, 0, 0, 74, 0, 74, 77, 0, 79, 81, 0, 82, 0, 81, 79, 0, 77, 0, 0, 77, 0, 76, 74, 0, 72, 0, 74, 0,
-0, 74, 0, 0, 0, 0, 0,
+74, 0, 74, 77, 0, 74, 72, 0, 74, 0, 0, 81, 0, 79, 77, 0, 72, 0, 72, 76, 0, 72, 70, 0, 69, 0, 72, 0, 74, 0, 0, 0,
+74, 0, 74, 77, 0, 79, 81, 0, 82, 0, 81, 79, 0, 77, 0, 0, 77, 0, 76, 74, 0, 72, 0, 74, 0, 0, 74, 0, 0, 0, 0, 0,
 ],
-B: [38, 34, 36, 33],
-bpm: 144,
-arp: [0, 7, 12, 7],
-w: "sawtooth",
 },
 {
+n: "Ridgeline", r: 40, s: "m", bpm: 128, w: "square", dr: 1, bs: 2, f: "IABACBDBO",
+P: { A: [0, 2, 6, 5], B: [0, 6, 5, 6], C: [5, 3, 6, 4] },
 L: [
-76, 0, 0, 79, 0, 81, 0, 0, 83, 0, 81, 0, 79, 0, 76, 0, 74, 0, 0, 76, 0, 79, 0, 0, 81, 0, 79, 0, 76, 0,
-0, 0, 76, 0, 0, 79, 0, 81, 83, 0, 86, 0, 83, 0, 81, 0, 79, 0, 78, 0, 76, 0, 74, 0, 76, 0, 0, 0, 0, 0,
-0, 0, 0, 0,
+76, 0, 0, 79, 0, 81, 0, 0, 83, 0, 81, 0, 79, 0, 76, 0, 74, 0, 0, 76, 0, 79, 0, 0, 81, 0, 79, 0, 76, 0, 0, 0,
+76, 0, 0, 79, 0, 81, 83, 0, 86, 0, 83, 0, 81, 0, 79, 0, 78, 0, 76, 0, 74, 0, 76, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 ],
-B: [40, 38, 36, 38],
-bpm: 128,
-arp: [0, 5, 7, 12],
-w: "square",
 },
+{ n: "Undertow", r: 42, s: "p", bpm: 118, w: "sawtooth", dr: 2, bs: 1, f: "IAABCDBBO", P: { A: [0, 1, 0, 6], B: [0, 1, 5, 6], C: [3, 2, 1, 1] } },
+{ n: "Highwire", r: 36, s: "h", bpm: 160, w: "square", dr: 0, bs: 0, f: "IABABCDBBO", P: { A: [0, 5, 3, 4], B: [0, 3, 4, 4], C: [5, 3, 4, 4] } },
+{ n: "Glasslands", r: 47, s: "d", bpm: 132, w: "triangle", dr: 1, bs: 2, f: "IAABCBDBO", P: { A: [0, 3, 0, 3], B: [2, 6, 0, 3], C: [4, 3, 2, 6] } },
+{ n: "Overrun", r: 40, s: "m", bpm: 152, w: "sawtooth", dr: 0, bs: 1, f: "IABBCBBDBO", P: { A: [0, 0, 5, 6], B: [0, 6, 5, 4], C: [3, 4, 5, 6] } },
+{ n: "Lantern", r: 38, s: "d", bpm: 108, w: "triangle", dr: 2, bs: 2, f: "IAABCBDO", P: { A: [0, 3, 6, 3], B: [2, 6, 3, 0], C: [4, 3, 6, 6] } },
 ],
-musTrk = 0;
-var FTR = [
-{ ch: null, bs: null, ld: null, bpm: 146 },
+FSONGS = [
 {
-ch: [
-[52, 55, 59],
-[48, 52, 55],
-[50, 53, 57],
-[47, 50, 55],
+n: "Holdout", r: 38, s: "m", bpm: 146, w: "square", dr: 0, bs: 0, f: "AABABCBDB",
+P: { A: [0, 5, 2, 6], B: [0, 5, 2, 6], C: [3, 4, 5, 6] },
+L: [
+74, 0, 77, 0, 76, 74, 0, 72, 74, 0, 0, 69, 0, 0, 72, 0, 74, 0, 77, 0, 79, 0, 77, 76, 74, 0, 72, 0, 69, 0, 0, 0,
+77, 0, 76, 0, 74, 0, 72, 0, 70, 0, 72, 74, 0, 0, 69, 0, 74, 0, 77, 79, 81, 0, 79, 77, 76, 0, 74, 0, 72, 0, 74, 0,
 ],
-bs: [40, 36, 38, 35],
-ld: [
-76, 0, 79, 0, 81, 79, 0, 76, 79, 0, 0, 74, 0, 0, 76, 0, 76, 0, 79, 0, 83, 0, 81, 79, 76, 0, 74, 0, 72,
-0, 0, 0, 79, 0, 78, 0, 76, 0, 74, 0, 72, 0, 74, 76, 0, 0, 71, 0, 76, 0, 79, 83, 84, 0, 83, 81, 79, 0,
-76, 0, 74, 0, 76, 0,
-],
-bpm: 150,
 },
 {
-ch: [
-[45, 48, 52],
-[41, 45, 48],
-[43, 47, 50],
-[40, 44, 47],
+n: "Uplift", r: 40, s: "m", bpm: 150, w: "square", dr: 1, bs: 1, f: "AABACBBDB",
+P: { A: [0, 5, 6, 2], B: [0, 5, 6, 2], C: [5, 6, 3, 4] },
+L: [
+76, 0, 79, 0, 81, 79, 0, 76, 79, 0, 0, 74, 0, 0, 76, 0, 76, 0, 79, 0, 83, 0, 81, 79, 76, 0, 74, 0, 72, 0, 0, 0,
+79, 0, 78, 0, 76, 0, 74, 0, 72, 0, 74, 76, 0, 0, 71, 0, 76, 0, 79, 83, 84, 0, 83, 81, 79, 0, 76, 0, 74, 0, 76, 0,
 ],
-bs: [33, 29, 31, 28],
-ld: [
-81, 0, 0, 84, 0, 83, 81, 0, 79, 0, 81, 0, 76, 0, 0, 0, 81, 0, 0, 84, 0, 86, 0, 84, 83, 0, 79, 0, 80, 0,
-0, 0, 88, 0, 86, 84, 0, 83, 0, 81, 79, 0, 77, 0, 76, 0, 74, 0, 76, 0, 80, 0, 83, 0, 86, 0, 88, 0, 0, 0,
-0, 0, 0, 0,
-],
-bpm: 156,
 },
-];
+{
+n: "Last Stand", r: 33, s: "h", bpm: 156, w: "sawtooth", dr: 0, bs: 0, f: "AABABCBDB",
+P: { A: [0, 3, 5, 4], B: [0, 5, 6, 4], C: [5, 6, 4, 4] },
+L: [
+81, 0, 0, 84, 0, 83, 81, 0, 79, 0, 81, 0, 76, 0, 0, 0, 81, 0, 0, 84, 0, 86, 0, 84, 83, 0, 79, 0, 80, 0, 0, 0,
+88, 0, 86, 84, 0, 83, 0, 81, 79, 0, 77, 0, 76, 0, 74, 0, 76, 0, 80, 0, 83, 0, 86, 0, 88, 0, 0, 0, 0, 0, 0, 0,
+],
+},
+{ n: "Ninth Wave", r: 37, s: "h", bpm: 154, w: "sawtooth", dr: 1, bs: 2, f: "AABACBBDB", P: { A: [0, 5, 3, 4], B: [0, 3, 5, 4], C: [5, 3, 4, 4] } },
+],
+musTrk = 0,
+RHY = [
+"1000101000101000", "1010001010100000", "1000100010101010", "1001001000100100",
+"1000001010001000", "1010101000000000", "1000100000001000", "1001000110010000",
+],
+RHS = ["1000000010000000", "1000000000001000", "1000001000000000"]; /* bridge: long notes */
+function songComp(T) {
+if (T.c) return T.c;
+var sc = SC[T.s],
+n = sc.length,
+sd = hash(T.n) || 1,
+R = function () {
+sd = (Math.imul(sd, 1103515245) + 12345) >>> 0;
+return (sd >>> 8) / 16777216;
+},
+pk = function (a) {
+return a[(R() * a.length) | 0];
+},
+lb = T.r + 24,
+rb = T.r;
+while (lb < 57) lb += 12;
+while (lb > 66) lb -= 12;
+while (rb >= 40) rb -= 12;
+while (rb < 28) rb += 12;
+var dm = function (d, base) {
+return base + 12 * Math.floor(d / n) + sc[((d % n) + n) % n];
+},
+bar = function (ch, rh, cur, lo, hi) {
+var o = [];
+for (var b = 0; b < 16; b++) {
+if (rh[b] !== "1") {
+o.push(null);
+continue;
+}
+if (b % 4 === 0) {
+var tgt = ch + pk([0, 2, 4]);
+while (tgt - cur > 3) tgt -= n;
+while (cur - tgt > 3) tgt += n;
+cur = tgt;
+} else cur += pk([-2, -1, -1, 1, 1, 2]);
+cur = Math.max(lo, Math.min(hi, cur));
+o.push(cur);
+}
+return { o: o, cur: cur };
+},
+phrase = function (P, nb, hi, slow) {
+var lo = hi ? 2 : -3,
+top = hi ? 10 : 7,
+r1 = slow ? pk(RHS) : pk(RHY),
+r2 = slow ? pk(RHS) : pk(RHY),
+m0 = bar(P[0], r1, (hi ? 7 : 0) + pk([0, 2, 4]), lo, top),
+m1 = bar(P[1], r2, m0.cur, lo, top),
+sh = function (a, k) {
+return a.map(function (v) {
+return v == null ? null : Math.max(lo, Math.min(top, v + k));
+});
+},
+cad = function (ch, end) {
+var c = bar(ch, slow ? "1000000000000000" : pk(["1000100010000000", "1010100000000000", "1000001010000000"]), m1.cur, lo, top).o;
+for (var b = 15; b >= 0; b--)
+if (c[b] != null) {
+c[b] = end;
+break;
+}
+return c;
+},
+v = function (a) {
+return a.map(function (x) {
+return x != null && R() < 0.25 ? Math.max(lo, Math.min(top, x + pk([-1, 1, 2]))) : x;
+});
+},
+B = [m0.o, m1.o, sh(m0.o, P[2] - P[0]), cad(P[3], P[3] + (hi ? 7 : 0))];
+if (nb > 4) B = B.concat([v(m0.o), v(m1.o), sh(m0.o, P[2] - P[0]), cad(P[3], hi ? 7 : 0)]);
+return [].concat.apply([], B);
+};
+var lead = {},
+bars = [],
+Ld = [],
+seen = {};
+for (var i = 0; i < T.f.length; i++) {
+var X = T.f[i],
+nb = SECN[X],
+P = T.P[X] || T.P.A;
+if (!lead[X] && "ABC".indexOf(X) >= 0)
+lead[X] = X === "B" && T.L ? { midi: T.L } : { deg: phrase(P, nb, X === "B", X === "C") };
+var rep = (seen[X] = (seen[X] || 0) + 1);
+for (var k = 0; k < nb; k++) {
+bars.push({ X: X, i: k, nb: nb, ch: P[k % 4], nx: k === nb - 1 ? T.f[(i + 1) % T.f.length] : X });
+for (var b = 0; b < 16; b++) {
+var Lx = lead[X],
+q = k * 16 + b,
+m = !Lx ? 0 : Lx.midi ? Lx.midi[q % Lx.midi.length] : Lx.deg[q] == null ? 0 : dm(Lx.deg[q], lb);
+if (m && rep > 1 && X === "B" && k >= nb / 2 && m + 12 <= 86) m += 12;
+Ld.push(m);
+}
+}
+}
+var Ln = Ld.map(function (m, j) {
+if (!m) return 0;
+var e = j + 1;
+while (e < Ld.length && !Ld[e] && e - j < 6) e++;
+return e - j;
+});
+T.c = { bars: bars, Ld: Ld, Ln: Ln, N: Ld.length, dm: dm, lb: lb, rb: rb };
+return T.c;
+}
+function songStep(T, step, t, sp, lv, tr, g) {
+var c = songComp(T),
+s = step % c.N,
+B = c.bars[s >> 4],
+b = s & 15,
+X = B.X,
+ch = B.ch,
+dm = c.dm,
+fill = B.i === B.nb - 1 && B.nx !== X,
+drm = lv >= 1 && X !== "D" && !(X === "I" && B.i < B.nb - 1),
+half = X === "C" || T.dr === 2;
+if (b === 0 && (X === "I" || X === "C" || X === "D" || X === "O" || lv < 1))
+[0, 2, 4].forEach(function (k) {
+tone(t, M2F(dm(ch + k, c.lb - 12) + tr), sp * 15, "triangle", lv < 1 ? 0.12 : 0.07, g);
+});
+if (lv < 1 && (b === 6 || b === 10)) tone(t, M2F(dm(ch + 4, c.lb) + tr), sp * 2, "sine", 0.1, g);
+if (lv >= 1 && X !== "D") {
+var root = dm(ch, c.rb) + tr,
+sty = X === "I" || X === "O" || X === "C" ? 3 : X === "B" ? (T.bs === 1 ? 1 : 0) : T.bs,
+bn = 0;
+if (sty === 0 && b % 2 === 0) bn = root + (b % 4 === 2 ? 12 : 0);
+if (sty === 1 && [0, 3, 6, 8, 11, 14].indexOf(b) >= 0) bn = root + (b === 14 ? 7 : 0);
+if (sty === 2 && b % 4 === 0) bn = [root, dm(ch + 2, c.rb) + tr, dm(ch + 4, c.rb) + tr, dm(c.bars[((s >> 4) + 1) % c.bars.length].ch, c.rb) + tr - 1][b >> 2];
+if (sty === 3 && (b === 0 || b === 8)) bn = root;
+if (bn) tone(t, M2F(bn), sp * (sty === 3 ? 7 : sty === 2 ? 3.5 : 1.8), sty === 2 ? "sawtooth" : "triangle", sty === 2 ? 0.2 : 0.5, g);
+}
+if (lv >= 2 && (X === "A" || X === "B" || X === "D" || (X === "I" && B.i >= 2))) {
+var six = X === "B" || X === "D";
+if (six || b % 2 === 0)
+tone(t, M2F(dm(ch + [0, 2, 4, 7][(six ? b : b >> 1) % 4], c.lb - 12) + tr + (lv >= 4 && X === "B" && b >= 8 ? 12 : 0)), sp * (six ? 0.9 : 1.8), "square", six ? 0.035 : 0.05, g);
+}
+if (lv >= 3 && c.Ld[s]) tone(t, M2F(c.Ld[s] + tr), sp * (c.Ln[s] - 0.3), T.w, T.w === "triangle" ? 0.16 : 0.1, g);
+if (drm) {
+var kick = half ? b === 0 || (X !== "C" && b === 10) : T.dr === 1 ? b === 0 || b === 7 || b === 10 : b === 0 || b === 8 || (X === "B" && (b === 6 || b === 14)),
+snare = half ? b === 8 : b === 4 || b === 12;
+if (X === "O" && B.i >= 2) kick = b === 0;
+if (kick) tone(t, 150, 0.18, "sine", 0.9, g, 40);
+if (fill && b >= 12) nz(t, 0.1, 0.18 + 0.07 * (b - 12), 2500, "bandpass", g);
+else if (snare) nz(t, 0.14, 0.4, 2500, "bandpass", g);
+if (X === "B" || lv >= 4 || b % 2 === 0) nz(t, 0.03, b % 4 === 2 ? 0.17 : b % 2 ? 0.07 : 0.12, 8000, "highpass", g);
+if (B.i === 0 && b === 0 && (X === "B" || X === "C")) nz(t, 0.9, 0.22, 6000, "highpass", g); /* crash into a chorus / bridge */
+} else if (lv >= 1 && X === "D" && b % 2 === 0) nz(t, 0.03, 0.08, 8000, "highpass", g);
+}
 function musTick() {
 if (!AC) return;
+var ff = mode === "ff" && FF && S && state !== "menu" && state !== "join",
+T = SONGS[musTrk % SONGS.length];
 if (musT < AC.currentTime - 0.04) {
-var sp0 = 60 / (mode === "ff" && FM.bpm ? FM.bpm : PVP[musTrk % 3].bpm) / 4,
+var sp0 = 60 / (ff && FM.bpm ? FM.bpm : T.bpm) / 4,
 n0 = Math.ceil((AC.currentTime + 0.03 - musT) / sp0);
 musT += n0 * sp0;
 musStep += n0;
 }
-if (mode === "ff" && FF && S && state !== "menu" && state !== "join") {
+if (ff) {
 ffMus();
 return;
 }
-var TK = PVP[musTrk % 3],
-LEAD_ = TK.L,
-BASS_ = TK.B,
-sp = 60 / TK.bpm / 4;
+var sp = 60 / T.bpm / 4;
 while (musT < AC.currentTime + 0.15) {
-var s = musStep % 64,
-bar = s >> 4,
-b = s & 15,
-t = musT,
-sect = (musStep >> 6) % 2;
-if (b % 2 === 0) tone(t, M2F(BASS_[bar] - 12 + (b % 4 === 2 ? 12 : 0)), sp * 1.8, "triangle", 0.5, musG);
-if (sect === 1 && LEAD_[s]) tone(t, M2F(LEAD_[s]), sp * 1.7, TK.w, 0.11, musG);
-if (sect === 0 && b % 4 === 0)
-tone(
-t,
-M2F(BASS_[bar] + 12 + TK.arp[b >> 2] + (bar === 3 && b >> 2 === 1 ? 1 : 0)),
-sp * 3,
-"square",
-0.06,
-musG,
-);
-if (b === 0 || b === 8 || (b === 10 && bar % 2)) tone(t, 150, 0.18, "sine", 0.9, musG, 40);
-if (b === 4 || b === 12) nz(t, 0.14, 0.4, 2500, "bandpass", musG);
-if (b % 2 === 0) nz(t, 0.03, 0.15, 8000, "highpass", musG);
+if (musStep >= songComp(T).N) {
+musTrk = (musTrk + 1) % SONGS.length;
+musStep = 0;
+T = SONGS[musTrk];
+sp = 60 / T.bpm / 4;
+}
+songStep(T, musStep, musT, sp, 4, 0, musG);
 musT += sp;
 musStep++;
 }
 }
 function musStart() {
 if (!AC) return;
-musTrk = W.GLData && W.GLData[mapI] ? hash(W.GLData[mapI].id + mode) % 3 : 0;
+musTrk = W.GLData && W.GLData[mapI] ? hash(W.GLData[mapI].id + mode) % SONGS.length : 0;
 AC.resume();
 musT = AC.currentTime + 0.05;
 musStep = 0;
@@ -2949,7 +3097,7 @@ spr += W_.bloom * p.bloom * (p.cr ? 0.6 : 1);
 }
 if (p.zl && W_.sprZ != null) spr = W_.sprZ;
 if (W_.prec && !p.bot) spr = 0;
-else spr += (p.z > onLow(p) + 0.05 ? 0.03 : 0) + (p.bot ? 0.022 : 0);
+else spr += (p.z > onLow(p) + 0.05 ? 0.012 : 0) + (p.bot ? 0.022 : 0); /* airborne: a small penalty (0.03 rad made the BR and pistol miss most jump shots) */
 if (W_.heat) {
 p.heat = (p.heat || 0) + W_.heat;
 if (p.heat >= 1) {
@@ -3052,6 +3200,11 @@ best = h.ang;
 a0 = p.a + h.ty * st_;
 p0 = p.pt + (h.tp - p.pt) * st_;
 k = W_.pel ? 1 : 1 - 0.7 * st_;
+if (W_.pel && h.ang < 1e-4) {
+var bz_ = o.z + (o.cov && CT[o.ty] ? CT[o.ty].H * 0.5 : 0.85 * ASC * (o.chs || 1));
+a0 = p.a + ang(Math.atan2(dy, dx) - p.a) * st_;
+p0 = p.pt + (Math.atan2((bz_ - ez) * PXM, d) - p.pt) * st_;
+}
 MAGL = { ang: h.ang, d: d, st: st_, cone: aaCone(p, d, 1) };
 }
 });
@@ -3571,8 +3724,9 @@ rng: 175 * M,
 life: 5,
 });
 A("shotgun", {
-dmg: 10,
+dmg: 11,
 dmin: 3,
+spr: 0.1,
 pel: 15,
 rof: 1,
 spd: 480 * V,
@@ -3702,17 +3856,25 @@ p.vz = 0;
 var r = 11 * ASC,
 z = p.z,
 ST = air ? 0.35 : 0.32,
-o0 = blkN(p.x, p.y, z, r, ST),
+nst = Math.min(8, Math.max(1, Math.ceil((Math.max(Math.abs(p.vx), Math.abs(p.vy)) * dt) / r))),
+sdt = dt / nst,
+px0 = p.x,
+py0 = p.y;
+for (var si = 0; si < nst; si++) {
+var o0 = blkN(p.x, p.y, z, r, ST),
 stuck = o0.length > 0,
-nx =
-p.x +
-p.vx *
-dt; /* already overlapping (e.g. pushed into cover): let the body slide out instead of locking both axes */
+nx = p.x + p.vx * sdt; /* already overlapping (e.g. pushed into cover): let the body slide out instead of locking both axes */
 if (stuck ? !blkOK(o0, nx, p.y, z, r, ST) : blk(nx, p.y, z, r, ST)) p.vx = 0;
 else p.x = nx;
-var ny = p.y + p.vy * dt;
+var ny = p.y + p.vy * sdt;
 if (stuck ? !blkOK(o0, p.x, ny, z, r, ST) : blk(p.x, ny, z, r, ST)) p.vy = 0;
 else p.y = ny;
+}
+if (blockZ(p.x, p.y, z + ST) && !blockZ(px0, py0, z + ST)) {
+p.x = px0;
+p.y = py0;
+p.vx = p.vy = 0;
+}
 var ng = onLow(p);
 if (p.z < ng) {
 if (ng - p.z <= (air ? 0.4 : 0.32) || stuck) {
@@ -4170,7 +4332,14 @@ if (E("swap")) sw = true;
 if (H("crouch")) p.cr = true;
 if (E("zoom")) zm = true;
 if (H("reload")) use = true;
-if (E("reload") && !p.near) startRl(p);
+if (E("reload")) {
+if (p.near) p.rlq = 1;
+else startRl(p);
+}
+if (p.rlq && !H("reload")) {
+p.rlq = 0;
+startRl(p);
+}
 }
 if (touch && KM) {
 if (touch.L) {
@@ -4218,6 +4387,7 @@ if (p.near && use) {
 if (p.ph >= 0) {
 p.ph += dt;
 if (p.ph > PKH) {
+p.rlq = 0;
 swapW(p, p.near);
 p.near = null;
 p.ph = -1;
@@ -6129,11 +6299,20 @@ pc = Math.atan2((q.z + q.h / 2 - ez) * PXM, d);
 if (
 yw < Math.atan(q.r / d) &&
 Math.abs(pc - p.pt) < Math.atan(((q.h / 2) * PXM) / d) &&
-los(p.x, p.y, q.x, q.y)
+hzClear(p, d - q.r)
 )
 return q;
 }
 return null;
+}
+function hzClear(p, d) {
+var ez = eyeZ(p),
+ca = Math.cos(p.pt),
+dx = Math.cos(p.a) * ca,
+dy = Math.sin(p.a) * ca,
+dz = Math.sin(p.pt) / PXM;
+for (var t = C * 0.25; t < d; t += C * 0.25) if (blockZ(p.x + dx * t, p.y + dy * t, ez + dz * t)) return false;
+return true;
 }
 var TRK = 25 * ASC * PXM;
 function trkBlip(me, p, R) {
@@ -6186,7 +6365,7 @@ var r_ = lookRate(p, rx, ry, dt),
 mult = 1,
 t = assist ? aimT(p, 0, -2) : null,
 tr_ = t && t.ang < aaCone(p, t.d, 0);
-if (t) mult *= LOOK.fric;
+if (tr_) mult *= LOOK.fric;
 mult *= (0.55 + cfg().sensS * 0.15) * (1 / ZFs(p));
 p.a += r_[0] * mult * dt;
 p.pt = clamp(p.pt - r_[1] * mult * dt, -1.45, 1.45);
@@ -9367,6 +9546,86 @@ m: [
 "........................................",
 ],
 },
+{
+n: "Ridgeback", k: "team \u00b7 hill", st: "forest", s: "r", a: "a8e070", h: 190, w: "sniper,br,rocket!,needler,shotgun",
+m: [
+".aaaaa.....,,,,,,,,,",
+".abbba.....,,,,=,,,,",
+"aabcbaa#S..,=,,,,,=,",
+".abbba.#.....,,,,,,,",
+".aaaaa........aa....",
+"...a.##..#...aWaa...",
+"......S..##.#aaaa##a",
+"#####.##...##.aaabbb",
+"3W333#.aaa....aa=bcc",
+"33333/.aba..=aabccdd",
+"3S333#.abaa..abbcdde",
+"33333#.aGba..abcddef",
+"F3S33/..aba..abcdefW",
+"33B33/..abaa.abcdeff",
+"33333#..aaba.abcddef",
+"3S333#.L.aba.abbcdde",
+"33333/...aaa=aabccdd",
+"3W333#....#...aa=bcc",
+"#####.##..##.##aabbb",
+"...#..aaa....a#.a##a",
+"..S#.aabaa..aaaa.=..",
+"....=aabaa.=abba....",
+"......aaa...aaaa....",
+"..=....P.=..#aa.=#..",
+"...X......W.##.K.#S.",
+"....................",
+],
+},
+{
+n: "Dunerise", k: "ffa \u00b7 dunes", st: "desert", s: "m", v: 1, a: "ffb45a", h: 28, w: "br,needler,shotgun!",
+m: [
+".aabbbbbaaaabbbaa...",
+"aSbcccccba=bbcb#a##.",
+"abc=dddccbabcdcbaa..",
+"#bcdeeedcS#bcdcbS#..",
+"abcdeWedcb#bbcbba#.#",
+"abcdeeedcb#G=bbaaaa#",
+"a##cdddc##bbbb#aabba",
+"aabccccc#bcccb#a.aa.",
+".aabXbbbbccdccbaa..=",
+".aaa##=bbcdedcb##...",
+".abbaaaSbcdedcbb=,P,",
+".a#ba.aa#ccdcWba,,,,",
+".Saaa..=#bcc#bb=,,,W",
+],
+},
+{
+n: "Frostvale", k: "team \u00b7 river", st: "snow", s: "r", a: "9ad8ff", h: 210, w: "sniper,br,rocket!,needler,shotgun",
+m: [
+"........aaaaaaa...,,",
+"......aaabbbbbKa#.,,",
+"..#..aWabSccccbaa.,,",
+".....aabccdddcc=a.,,",
+"....##abcdeeedcba.,,",
+".....aabcdefedcba111",
+"......abcdeeedcSa111",
+"aWaaaaab#cdddc##a.,,",
+"abbba##a#cccc=baa.,,",
+"bbSbbbaaab=bbbaa..,,",
+"cccccbb#aaaaaaa#..,,",
+"cdddccbaaG.a...#....",
+"FdedScbaa...#...#..W",
+"ddBddcbaL...#.=.#..a",
+"cdddccbaa=..........",
+"cccccbb#..........,,",
+"bbSbbbaa..aaaaa.P.,,",
+"abbba##.#abbbb=a..,,",
+"aWaaaa..#bbccc##a.,,",
+"........abccdccba111",
+".......abbcdedcbb111",
+"...S##.a=bcdedcbba,,",
+"........ab#cdccb=.,,",
+"..#.X...ab#cWcbba.,,",
+".........ab=b##a#S,,",
+"..........aaaaa...,,",
+],
+},
 ];
 var GRK = {
 minor: { c: [0.95, 0.55, 0.15], w: ["pplasma", "needler"] },
@@ -9536,6 +9795,7 @@ ffLayout();
 var FFK = "nano.ff";
 function ffSave() {
 if (mode !== "ff" || !FF || FF.over || !S || !W.GLData[mapI]) return;
+crMatch(0, 1); /* career: bank what this run has earned so far (a run may never reach GAME OVER) */
 var hs = humans();
 try {
 localStorage.setItem(
@@ -9558,6 +9818,12 @@ return FF.sc[h.id] || 0;
 kp: hs.map(function (h) {
 return FF.kp[h.id] || {};
 }),
+st: hs.map(function (h) {
+return { k: h.kills, d: h.deaths, a: h.assists || 0, mc: h.fx.medC, wk: h.wk || {}, bsp: h.bsp || 0, bmu: h.bmu || 0 };
+}),
+mc: S.medC,
+t: S.t,
+bk: FF.bk || null,
 }),
 );
 } catch (e) {}
@@ -9590,7 +9856,20 @@ FF.k = o.k || {};
 humans().forEach(function (h, i) {
 FF.sc[h.id] = (o.sc && o.sc[i]) || 0;
 FF.kp[h.id] = (o.kp && o.kp[i]) || {};
+var q = o.st && o.st[i];
+if (q) {
+h.kills = q.k || 0;
+h.deaths = q.d || 0;
+h.assists = q.a || 0;
+h.fx.medC = q.mc || {};
+h.wk = q.wk || {};
+h.bsp = q.bsp || 0;
+h.bmu = q.bmu || 0;
+}
 });
+if (o.mc) S.medC = o.mc;
+S.t = o.t || 0;
+FF.bk = o.bk || null;
 FF.ph = "brk";
 FF.t = 5;
 ffSk();
@@ -11346,19 +11625,7 @@ g.fillText(l, x + 140, yy + 3 + (fs + 3) / 2 + j * (fs + 3) + (rh - rows[i].leng
 yy += rh;
 });
 }
-var FM = { L: [], lvl: 0, stg: 0, ffG: null, bpm: 0 },
-FCH = [
-[50, 53, 57],
-[46, 50, 53],
-[53, 57, 60],
-[48, 52, 55],
-],
-FBS = [38, 34, 41, 36],
-FLD = [
-74, 0, 77, 0, 76, 74, 0, 72, 74, 0, 0, 69, 0, 0, 72, 0, 74, 0, 77, 0, 79, 0, 77, 76, 74, 0, 72, 0, 69, 0,
-0, 0, 77, 0, 76, 0, 74, 0, 72, 0, 70, 0, 72, 74, 0, 0, 69, 0, 74, 0, 77, 79, 81, 0, 79, 77, 76, 0, 74, 0,
-72, 0, 74, 0,
-];
+var FM = { L: [], lvl: 0, stg: 0, ffG: null, bpm: 0 };
 function ffBus() {
 if (!FM.ffG && AC) {
 FM.ffG = AC.createGain();
@@ -11389,16 +11656,13 @@ if (k === "round") nz(t + N.length * 0.09, 0.5, 0.25, 6000, "highpass", g);
 FM.stg++;
 }
 function ffMus() {
-var FT_ = FTR[((FF.round || 1) - 1) % 3],
-FCH_ = FT_.ch || FCH,
-FBS_ = FT_.bs || FBS,
-FLD_ = FT_.ld || FLD,
+var trk = ((FF.round || 1) - 1 + (FF.set - 1 || 0)) % FSONGS.length,
+T = FSONGS[trk],
 g = ffBus(),
 B = FF.ph === "bonus",
-bpm = B ? 158 : FT_.bpm + (FF.set > 1 ? 4 : 0),
+bpm = B ? 158 : T.bpm + (FF.set > 1 ? 4 : 0),
 sp = 60 / bpm / 4,
 al = ffAlive(),
-dr = FF.ph !== "brk" || B,
 lv = B
 ? 4
 : FF.ph === "brk"
@@ -11410,45 +11674,17 @@ lv = B
 (FF.wave >= 3 || FF.round >= 2 ? 1 : 0) +
 (FF.wave >= 5 || FF.set >= 2 || al > 9 ? 1 : 0),
 );
+if (FM.trk !== trk) musStep = 0; /* a new round starts its song from the top */
 FM.lvl = lv;
 FM.bpm = bpm;
-FM.trk = ((FF.round || 1) - 1) % 3;
+FM.trk = trk;
 FM.L = ["base"]
-.concat(dr ? ["drums", "bass"] : [])
+.concat(lv >= 1 ? ["drums", "bass"] : [])
 .concat(lv >= 2 ? ["arp"] : [])
 .concat(lv >= 3 ? ["lead"] : [])
 .concat(B ? ["bonus"] : []);
 while (musT < AC.currentTime + 0.15) {
-var s = musStep % 64,
-bar = s >> 4,
-b = s & 15,
-t = musT,
-ch = FCH_[bar],
-tr = B ? 1 : 0;
-if (b === 0)
-ch.forEach(function (n) {
-tone(t, M2F(n + tr), sp * 14, "triangle", dr ? 0.08 : 0.13, g);
-}); /* base pad */
-if (!dr && (b === 6 || b === 10)) tone(t, M2F(ch[2] + 12), sp * 2, "sine", 0.12, g);
-if (dr) {
-if (b === 0 || b === 6 || b === 8 || b === 14 || (B && b === 11))
-tone(t, 140, 0.16, "sine", 0.9, g, 38);
-if (b === 4 || b === 12) nz(t, 0.13, 0.42, 2400, "bandpass", g);
-nz(t, 0.025, b % 2 ? 0.07 : 0.14, 8500, "highpass", g);
-if (lv >= 4 && b % 4 === 2) nz(t, 0.05, 0.12, 5000, "highpass", g);
-if (b % 2 === 0) tone(t, M2F(FBS_[bar] + tr + (b % 4 === 2 ? 12 : 0)), sp * 1.6, "sawtooth", 0.16, g);
-}
-if (lv >= 2 && (lv >= 3 || b % 2 === 0))
-tone(
-t,
-M2F(ch[[0, 1, 2, 1][b % 4]] + 12 + tr + (b >= 8 && lv >= 4 ? 12 : 0)),
-sp * 0.9,
-"square",
-0.035 + 0.01 * lv,
-g,
-);
-if (lv >= 3 && FLD_[s])
-tone(t, M2F(FLD_[s] + tr + (lv >= 4 && bar === 3 ? 12 : 0)), sp * 1.7, "square", 0.09, g);
+songStep(T, musStep, musT, sp, lv, B ? 1 : 0, g);
 musT += sp;
 musStep++;
 }
@@ -12600,7 +12836,7 @@ else if (state === "end") el(endHTML(), keep);
 else el("");
 }
 function startM() {
-if (W.GLData && W.GLData[mapI]) musTrk = hash(W.GLData[mapI].id + mode) % 3;
+if (W.GLData && W.GLData[mapI]) musTrk = hash(W.GLData[mapI].id + mode) % SONGS.length;
 newMatch();
 if (LASTIN === "touch" && !touch) touch = { ldx: 0, ldy: 0 }; /* touch device: sticks and buttons from the first frame */
 resize();
@@ -12712,6 +12948,7 @@ startM();
 });
 } else if (a === "resume") resume();
 else if (a === "menu") {
+ffSave();
 state = "menu";
 SPLIT = 1;
 lobGo("lobby", mode === "ff" ? "ff" : "mp");
@@ -13336,6 +13573,7 @@ cancelAnimationFrame(raf);
 raf = 0;
 musStop();
 if (AC) AC.suspend();
+ffSave(); /* leaving a Firefight run banks it (and keeps CONTINUE) */
 S = null;
 state = "menu";
 keys = {};
@@ -13594,6 +13832,9 @@ cur = G[mapI] && G[mapI].id;
 for (var b = 0; b < G.length; b++)
 if (!G[b].fg && !G[b].bpn) G[b] = Object.assign({}, G[b], { nameText: BP[b % BP.length].n, bpn: 1 });
 for (var i = G.length - 1; i >= 0; i--) if (G[i].fg === 1) G.splice(i, 1);
+var nb_ = 0;
+while (nb_ < G.length && !G[nb_].fg) nb_++;
+for (b = nb_; b < BP.length; b++) G.splice(b, 0, { id: "nano:" + BP[b].n, nameText: BP[b].n, bpn: 1 });
 fgSaved().forEach(function (M) {
 G.push({ id: "forge:" + M.n, nameText: M.n, fg: 1, bp: fgBP(M) });
 });
@@ -14998,17 +15239,32 @@ return c[1] === "w" ? WPNM[c[0]] : { g: "GRUNTS", j: "JACKALS", e: "ELITES", h: 
 function mkIdx(n) {
 return MK.indexOf(n);
 }
-function crMatch(quit) {
+function cdif(a, b) {
+var o = {};
+for (var k in a) if (a[k] - (b[k] || 0) > 0) o[k] = a[k] - (b[k] || 0);
+return o;
+}
+function crMatch(quit, bank) {
 if (!S || S.crDone || (FG && FG.test)) return;
 var me = humans()[0];
 if (!me) return;
-S.crDone = 1;
+var ff = mode === "ff";
+if (bank && !(ff && FF)) return;
+if (!bank) S.crDone = 1;
 crLoad();
 crRoll();
-var ff = mode === "ff",
-gt = ff ? "ff" : mode === "ffa" || mode === "team" ? "slayer" : mode,
+var bk = ff && FF ? FF.bk || (FF.bk = { k: 0, d: 0, a: 0, mc: {}, wk: {}, ffk: {}, waves: 0, sets: 0, t: 0, xp: 0, x0: CR.xp, ch: [], B: [] }) : null,
+mc0 = (me.fx && me.fx.medC) || {},
+wk0 = me.wk || {},
+ffk0 = ff && FF ? FF.kp[me.id] || {} : {},
+sets0 = ff && FF ? FF.set - 1 : 0;
+if (bank && me.kills === bk.k && FF.waves === bk.waves && sets0 === bk.sets && S.t - bk.t < 30) return;
+var gt = ff ? "ff" : mode === "ffa" || mode === "team" ? "slayer" : mode,
 tm = TMD(),
-mc = (me.fx && me.fx.medC) || {},
+mc = bk ? cdif(mc0, bk.mc) : mc0,
+kills = me.kills - (bk ? bk.k : 0),
+deaths = me.deaths - (bk ? bk.d : 0),
+dt = S.t - (bk ? bk.t : 0),
 win = false;
 if (!ff && !quit) {
 if (tm) win = (S.score[me.team] || 0) > (S.score[1 - me.team] || 0);
@@ -15018,11 +15274,12 @@ return p === me || (S.score[p.id] || 0) < (S.score[me.id] || 0);
 });
 }
 var M = {
-ff: ff, gt: gt, team: tm, win: win, kills: me.kills, hs: mc.HEADSHOT || 0, ast: me.assists || 0,
-mel: (mc["BEAT DOWN"] || 0) + (mc.ASSASSINATION || 0), wk: me.wk || {}, caps: me.caps || 0, otm: me.otm || 0,
+ff: ff, gt: gt, team: tm, win: win, kills: kills, hs: mc.HEADSHOT || 0, ast: (me.assists || 0) - (bk ? bk.a : 0),
+mel: (mc["BEAT DOWN"] || 0) + (mc.ASSASSINATION || 0), wk: bk ? cdif(wk0, bk.wk) : wk0, caps: me.caps || 0, otm: me.otm || 0,
 fg: !!(W.GLData[mapI] || {}).fg, m3: 0, sp: 0,
-ffk: ff && FF ? FF.kp[me.id] || {} : {}, waves: ff && FF ? FF.waves : 0, rounds: ff && FF ? Math.floor(FF.waves / 5) : 0, sets: ff && FF ? FF.set - 1 : 0,
+ffk: bk ? cdif(ffk0, bk.ffk) : {}, waves: bk ? FF.waves - bk.waves : 0, sets: bk ? sets0 - bk.sets : 0,
 };
+M.rounds = bk ? Math.floor(FF.waves / 5) - Math.floor(bk.waves / 5) : 0;
 var medXP = 0;
 for (var n in mc) {
 var mi = mkIdx(n);
@@ -15032,7 +15289,7 @@ for (var q in SPR) if (SPR[q] === n) sk = q / 5;
 if (sk) M.sp += mc[n];
 medXP += mc[n] * (10 + (mi > 2 ? 5 * (mi - 2) : 0) + sk * 15);
 }
-var lv0 = crLv(CR.xp),
+var lv0 = crLv(bk && !bank ? bk.x0 : CR.xp),
 dk = DIFFK.indexOf(ff ? ffd() : SET.diff),
 dm = [0.75, 1, 1.25, 1.5][dk < 0 ? 1 : dk],
 wkd = weekend(),
@@ -15041,8 +15298,9 @@ base = 0;
 if (ff) {
 var wv = M.waves * 60,
 st_ = M.sets * 250;
-base = wv + st_ + me.kills * 2 + medXP;
-L.push(["WAVES", "+" + wv], ["SETS", "+" + st_], ["KILLS", "+" + me.kills * 2], ["MEDALS", "+" + medXP]);
+base = wv + st_ + kills * 2 + medXP;
+if (bk.xp) L.push(["EARLIER WAVES", "+" + crNum(bk.xp)]);
+L.push(["WAVES", "+" + wv], ["SETS", "+" + st_], ["KILLS", "+" + kills * 2], ["MEDALS", "+" + medXP]);
 } else {
 base = 200 + (win ? 150 : 0) + me.kills * 5 + medXP;
 L.push(["MATCH", "+200"], ["WIN", win ? "+150" : "—"], ["KILLS", "+" + me.kills * 5], ["MEDALS", "+" + medXP]);
@@ -15081,12 +15339,13 @@ ct0 = COMM.map(commTier);
 if (ff) {
 var F_ = CR.ff,
 sc = FF ? FF.sc[me.id] || 0 : 0;
-F_.r++;
+if (!bk.r) F_.r++;
+bk.r = 1;
 F_.waves += M.waves;
 F_.sets += M.sets;
-F_.t += S.t;
+F_.t += dt;
 for (var e in M.ffk) F_.k[e] = (F_.k[e] || 0) + M.ffk[e];
-if (sc > F_.bsc && F_.r > 1) B.push("NEW FIREFIGHT RECORD · " + sc.toLocaleString("en-US"));
+if (sc > F_.bsc && F_.r > 1 && !bank) B.push("NEW FIREFIGHT RECORD · " + sc.toLocaleString("en-US"));
 F_.bsc = Math.max(F_.bsc, sc);
 if (FF && (FF.set > F_.bset || (FF.set === F_.bset && FF.round > F_.bround))) {
 F_.bset = FF.set;
@@ -15127,6 +15386,28 @@ xp += cx;
 L.push(["COMMENDATIONS", "+" + cx, 1]);
 }
 CR.xp += xp;
+if (bk) {
+bk.k = me.kills;
+bk.d = me.deaths;
+bk.a = me.assists || 0;
+bk.mc = JSON.parse(JSON.stringify(mc0));
+bk.wk = JSON.parse(JSON.stringify(wk0));
+bk.ffk = JSON.parse(JSON.stringify(ffk0));
+bk.waves = FF.waves;
+bk.sets = sets0;
+bk.t = S.t;
+var bxp = bk.xp;
+bk.xp += xp;
+if (bank) {
+bk.ch = bk.ch.concat(CH.filter(function (c) { return c.done; }));
+bk.B = bk.B.concat(B);
+crSave();
+return;
+}
+xp += bxp;
+CH = bk.ch.concat(CH);
+B = bk.B.concat(B);
+}
 var lv1 = crLv(CR.xp);
 CR.hist.unshift({
 g: gt, n: ff ? "FIREFIGHT" : modeName(), m: (W.GLData[mapI] || {}).nameText || "",
